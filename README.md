@@ -67,7 +67,10 @@ recorder = Recorder(desktop)
 
 with recorder.Task("search for french ducks") as task:  # should this just be tasks?
     desktop.open_url("https://yahoo.com")
+
+
 # OR
+
 
 from skillpacks import Episode
 
@@ -77,6 +80,7 @@ with Episode(desktop, "search for french ducks") as episode:
 
 
 # OR
+
 
 from skillpacks import Task
 from agentdesk import WebApp
@@ -113,42 +117,76 @@ Example data model:
 ```yaml
 type: Task
 version: v1
+tool:
+  name: Desktop
+  module: agentdesk
+  version: v1
 description: Search for french ducks
-tools:
-  - name: Desktop
-    module: agentdesk
-    version: v1
-  - name: Thread
-    module: deepthread
-    version: v1
-actions:
-  - tool: Desktop
-    user: agent
-    reason: I need to open Google to search
-    result: None
+```
+
+```yaml
+type: Task
+version: v1
+description: Search for french ducks
+tool:
+  name: Desktop
+  module: agentdesk
+  version: v1
+  parameters:
+    url: https://google.com
+state_actions:
+  - observations:
+      - tool: Desktop
+        name: mouse_coordinates
+        result:
+          x: 500
+          y: 500
+      - tool: Desktop
+        name: screenshot
+        result:
+          image: "b64img"
     action:
+      tool: Desktop
+      user: agent
+      reason: I need to open Google to search
+      result: None
       name: open_url
       parameters:
-        - name: "url"
-          value: "https://google.com"
-  - tool: Desktop
-    user: agent
-    reason: I need click on the search bar
-    result: None
+        url: "https://google.com"
+
+  - observations:
+      - tool: Desktop
+        name: mouse_coordinates
+        result:
+          x: 500
+          y: 500
+      - tool: Desktop
+        name: screenshot
+        result:
+          image: "b64img"
     action:
+      tool: Desktop
+      user: agent
+      reason: I need click on the search bar
       name: click
       parameters:
-        - name: "x"
-          value: 500
-        - name: "y"
-          value: 500
-  - tool: Desktop
-    user: agent
-    reason: I need to type text into the search bar to find french ducks
-    result: None
+        x: 500
+        y: 500
+
+  - observations:
+      - tool: Desktop
+        name: mouse_coordinates
+        result:
+          x: 500
+          y: 500
+      - tool: Desktop
+        name: screenshot
+        result: "b64img"
     action:
+      tool: Desktop
+      user: agent
+      reason: I need to type text into the search bar to find french ducks
       name: type_text
       parameters:
-        - name: "text"
-          value: "What are the varieties of french ducks"
+        text: "What are the varieties of french ducks"
 ```
