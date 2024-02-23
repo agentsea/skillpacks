@@ -190,3 +190,17 @@ state_actions:
       parameters:
         text: "What are the varieties of french ducks"
 ```
+
+### Threads and tasks
+
+The function calling model works actions directly into threads. This may be
+desirable in some situations and not others.
+
+It is also possible that a task has a thread
+
+In which case it can become tricky as to what to put in the thread. If you put everything in the thread
+it could become really messy with GUI navigation where there are many actions and observations
+
+We could also have separate threads that are time synced, so they can be merged when needed. For example,
+I could have a thread with the conversation, then another thread tracking the actions/observations for a task.
+If the user messages the thread, it triggers a response from the agent in which the two threads are merged.

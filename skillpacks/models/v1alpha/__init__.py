@@ -9,13 +9,7 @@ class V1ToolMeta(BaseModel):
     parameters: Optional[dict] = None
 
 
-class V1Observation(BaseModel):
-    name: str
-    parameters: Optional[dict] = None
-    result: Optional[Any] = None
-
-
-class V1Action(BaseModel):
+class V1ActionEvent(BaseModel):
     name: str
     user: Optional[str] = None
     reason: Optional[str] = None
@@ -24,8 +18,8 @@ class V1Action(BaseModel):
 
 
 class V1StateAction(BaseModel):
-    observations: List[V1Observation]
-    action: V1Action
+    observations: List[V1ActionEvent]
+    action: V1ActionEvent
 
 
 class V1AcceptedSolution(BaseModel):
