@@ -5,7 +5,7 @@
     <img src="https://project-logo.png" alt="Logo" width="80">
   </a> -->
 
-  <h3 align="center">SkillPacks</h3>
+  <h1 align="center">SkillPacks</h1>
 
   <p align="center">
     Pluggable skillsets for AI agents
@@ -33,174 +33,47 @@ pip install skillpacks
 
 ## Quick Start
 
-Let's teach an agent how to use Google from a desktop GUI.
-
-To do this we will use the tool [AgentDesk](https://github.com/agentsea/agentdesk) to create a desktop GUI.
+Create an episode to record agent events
 
 ```python
-from agentdesk import Desktop
-
-# Create a local VM
-desktop = Desktop.local()
-
-# Launch the UI to view it
-desktop.view(background=True)
-```
-
-We can ask skillpacks to learn about our tool autonomously
-
-```python
-from skillpacks import Explorer
-
-explorer = Explorer(desktop)
-tasks = explorer.explore()
-```
-
-This will generate a set of tasks that can be accomplished with the tool.
-
-Or we can manually provide examples of how to use the tool
-
-```python
-from skillpacks import Recorder
-
-recorder = Recorder(desktop)
-
-with recorder.Task("search for french ducks") as task:  # should this just be tasks?
-    desktop.open_url("https://yahoo.com")
-
-
-# OR
-
-
 from skillpacks import Episode
 
-# An episode is an attempt to solve a task
-with Episode(desktop, "search for french ducks") as episode:
-    desktop.open_url("https://google.com")
-
-
-# OR
-
-
-from skillpacks import Task
-from agentdesk import WebApp
-
-# Create a webapp tool for google
-app = WebApp("https://google.com")
-
-# Define the task to be accomplished
-task = Task("search for french ducks", tool=app)
-
-# Attempt to solve the task
-with task.attempt() as attempt:
-    rec_app = attempt.record(app)
-
-    rec_app.click(reason="I need to click on the search bar")  # does this make sense
-
-
+episode = Episode(remote="https://foo.bar")
 ```
 
-Once we have a good set of examples usage we can train
+Take an action
 
 ```python
-from skillpacks import
+from mllm import MLLMRouter, RoleThread
+from skillpacks import V1Action
+from agentdesk import Desktop
+
+router = MLLMRouter.from_env()
+
+thread = RoleThread()
+msg = f"""
+I need to open Google to search, your available action are {desktop.json_schema()}
+please return your selection as {V1Action.model_json_schema()}
+"""
+thread.post(
+    role="user",
+    msg=msg
+)
+
+response = router.chat(thread, expect=V1Action)
+v1action = response.parsed
+
+action = Desktop.find_action(name=v1action.name)
+result = Desktop.use(action, **v1action.parameters)
 ```
 
-## Usage
+Record the action in the episode
 
-## Notes
-
-- Everything is a set of actions taken with respect to a task
-
-Example data model:
-
-```yaml
-type: Task
-version: v1
-tool:
-  name: Desktop
-  module: agentdesk
-  version: v1
-description: Search for french ducks
+```python
+episode.record(
+    prompt=response.prompt_id,
+    action=response.parsed,
+    tool=desktop.ref(),
+    result=result,
+)
 ```
-
-```yaml
-type: Task
-version: v1
-description: Search for french ducks
-tool:
-  name: Desktop
-  module: agentdesk
-  version: v1
-  parameters:
-    url: https://google.com
-state_actions:
-  - observations:
-      - tool: Desktop
-        name: mouse_coordinates
-        result:
-          x: 500
-          y: 500
-      - tool: Desktop
-        name: screenshot
-        result:
-          image: "b64img"
-    action:
-      tool: Desktop
-      user: agent
-      reason: I need to open Google to search
-      result: None
-      name: open_url
-      parameters:
-        url: "https://google.com"
-
-  - observations:
-      - tool: Desktop
-        name: mouse_coordinates
-        result:
-          x: 500
-          y: 500
-      - tool: Desktop
-        name: screenshot
-        result:
-          image: "b64img"
-    action:
-      tool: Desktop
-      user: agent
-      reason: I need click on the search bar
-      name: click
-      parameters:
-        x: 500
-        y: 500
-
-  - observations:
-      - tool: Desktop
-        name: mouse_coordinates
-        result:
-          x: 500
-          y: 500
-      - tool: Desktop
-        name: screenshot
-        result: "b64img"
-    action:
-      tool: Desktop
-      user: agent
-      reason: I need to type text into the search bar to find french ducks
-      name: type_text
-      parameters:
-        text: "What are the varieties of french ducks"
-```
-
-### Threads and tasks
-
-The function calling model works actions directly into threads. This may be
-desirable in some situations and not others.
-
-It is also possible that a task has a thread
-
-In which case it can become tricky as to what to put in the thread. If you put everything in the thread
-it could become really messy with GUI navigation where there are many actions and observations
-
-We could also have separate threads that are time synced, so they can be merged when needed. For example,
-I could have a thread with the conversation, then another thread tracking the actions/observations for a task.
-If the user messages the thread, it triggers a response from the agent in which the two threads are merged.

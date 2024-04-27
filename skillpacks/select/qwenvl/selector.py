@@ -1,3 +1,4 @@
+# type: ignore
 from typing import List
 import pprint
 
@@ -5,7 +6,7 @@ from agent_tools import Action, Observation
 from frequency.client import FrequencyClient, ModelClient
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from skillpacks.task import Attempt
+from skillpacks.task_old import Attempt
 from skillpacks.select import Selector
 from .instruct import system_prompt
 

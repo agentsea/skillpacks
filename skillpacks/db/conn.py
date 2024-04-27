@@ -36,8 +36,8 @@ def get_pg_conn() -> Engine:
 
 
 def get_sqlite_conn() -> Engine:
-    os.makedirs(os.path.dirname("./data/agentdesk.db"), exist_ok=True)
-    engine = create_engine("sqlite:///./data/agentdesk.db")
+    os.makedirs(os.path.dirname("./data/skillpacks.db"), exist_ok=True)
+    engine = create_engine("sqlite:///./data/skillpacks.db")
     return engine
 
 

@@ -1,3 +1,5 @@
+# type: ignore
+
 from typing import List, Optional, Any
 from dataclasses import dataclass
 
