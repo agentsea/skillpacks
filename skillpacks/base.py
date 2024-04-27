@@ -150,14 +150,17 @@ class Episode(WithDB):
 
     def record(
         self,
-        prompt: Prompt,
+        prompt: Prompt | str,
         action: V1Action,
         tool: V1ToolRef,
         result: Optional[Any] = None,
         namespace: str = "default",
         metadata: dict = {},
-    ) -> None:
+    ) -> ActionEvent:
         """Records an action to the episode."""
+        if isinstance(prompt, str):
+            prompt = Prompt.find(prompt_id=prompt)[0]
+
         event = ActionEvent(
             prompt=prompt,
             action=action,
@@ -167,6 +170,8 @@ class Episode(WithDB):
             metadata=metadata,
         )
         self.record_event(event)
+
+        return event
 
     def save(self) -> None:
         """Saves the instance to the database."""

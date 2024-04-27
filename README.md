@@ -49,6 +49,7 @@ from skillpacks import V1Action
 from agentdesk import Desktop
 
 router = MLLMRouter.from_env()
+desktop = Desktop.local()
 
 thread = RoleThread()
 msg = f"""
@@ -63,17 +64,40 @@ thread.post(
 response = router.chat(thread, expect=V1Action)
 v1action = response.parsed
 
-action = Desktop.find_action(name=v1action.name)
-result = Desktop.use(action, **v1action.parameters)
+action = desktop.find_action(name=v1action.name)
+result = desktop.use(action, **v1action.parameters)
 ```
 
 Record the action in the episode
 
 ```python
-episode.record(
+event = episode.record(
     prompt=response.prompt_id,
-    action=response.parsed,
+    action=v1action,
     tool=desktop.ref(),
     result=result,
 )
+```
+
+Mark the action as approved
+
+```python
+from skillpacks import ActionEvent
+
+events = ActionEvent.find(id=event.id)
+event = events[0]
+
+event.approve()
+```
+
+Get all approved actions
+
+```python
+
+```
+
+Tune a model on the actions
+
+```python
+
 ```
