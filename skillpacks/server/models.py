@@ -41,6 +41,12 @@ class V1ActionEvent(BaseModel):
     created: float
 
 
+class V1ActionEvents(BaseModel):
+    """A list of action events"""
+
+    events: List[V1ActionEvent] = []
+
+
 class V1CreateActionEvent(BaseModel):
     """An action that has occurred"""
 
@@ -49,11 +55,30 @@ class V1CreateActionEvent(BaseModel):
     result: Any
     tool: V1ToolRef
     namespace: str
+    metadata: dict = {}
+    approved: bool = False
+    flagged: bool = False
 
 
 class V1Episode(BaseModel):
     """An agent episode"""
 
-    actions: List[V1ActionEvent]
+    actions: List[V1ActionEvent] = []
     tags: List[str] = []
     labels: Dict[str, Any] = {}
+
+
+class V1Episodes(BaseModel):
+    """A list of episodes"""
+
+    episodes: List[V1Episode] = []
+
+
+class V1UserProfile(BaseModel):
+    email: Optional[str] = None
+    display_name: Optional[str] = None
+    handle: Optional[str] = None
+    picture: Optional[str] = None
+    created: Optional[int] = None
+    updated: Optional[int] = None
+    token: Optional[str] = None

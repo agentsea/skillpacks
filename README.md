@@ -44,11 +44,11 @@ episode = Episode(remote="https://foo.bar")
 Take an action
 
 ```python
-from mllm import MLLMRouter, RoleThread
+from mllm import Router, RoleThread
 from skillpacks import V1Action
 from agentdesk import Desktop
 
-router = MLLMRouter.from_env()
+router = Router.from_env()
 desktop = Desktop.local()
 
 thread = RoleThread()
@@ -56,10 +56,7 @@ msg = f"""
 I need to open Google to search, your available action are {desktop.json_schema()}
 please return your selection as {V1Action.model_json_schema()}
 """
-thread.post(
-    role="user",
-    msg=msg
-)
+thread.post(role="user", msg=msg)
 
 response = router.chat(thread, expect=V1Action)
 v1action = response.parsed
@@ -79,25 +76,65 @@ event = episode.record(
 )
 ```
 
-Mark the action as approved
+Mark actions as approved
+
+```python
+# approve one
+episode.approve_one(event.id)
+
+# approve all actions before the event
+episode.approve_previous(event.id)
+
+# approve all
+episode.approve_all()
+```
+
+Get all approved actions in an episode
+
+```python
+episode = Episode.find(id="123")[0]
+actions = episode.approved_actions()
+```
+
+Get all approved actions in a namespace
 
 ```python
 from skillpacks import ActionEvent
 
-events = ActionEvent.find(id=event.id)
-event = events[0]
-
-event.approve()
+actions = ActionEvent.find(namespace="foo", approved=True)
 ```
 
-Get all approved actions
+Get all approved actions for a tool
 
 ```python
-
+actions = ActionEvent.find(tool=desktop.ref(), approved=True)
 ```
 
 Tune a model on the actions
 
 ```python
+from skillpacks.model import InternVLChat
+from skillpacks.runtime import KubernetesRuntime
 
+runtime = KubernetesRuntime()
+model = InternVLChat(runtime=runtime)
+
+result = model.train(actions=actions, follow=True, publish=True)
+```
+
+## Backends
+
+Thread and prompt storage can be backed by:
+
+- Sqlite
+- Postgresql
+
+Sqlite will be used by default. To use postgres simply configure the env vars:
+
+```sh
+DB_TYPE=postgres
+DB_NAME=skills
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASS=abc123
 ```

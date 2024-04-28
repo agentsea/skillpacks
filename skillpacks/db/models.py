@@ -22,6 +22,7 @@ class ActionRecord(Base):
     __tablename__ = "actions"
 
     id = Column(String, primary_key=True)
+    owner_id = Column(String, nullable=True)
     namespace = Column(String, default="default")
     prompt_id = Column(String)
     action = Column(Text)
@@ -40,6 +41,7 @@ class EpisodeRecord(Base):
     __tablename__ = "episodes"
 
     id = Column(String, primary_key=True)
+    owner_id = Column(String, nullable=True)
     tags = Column(Text, default=list)
     labels = Column(Text, default=list)
     created = Column(Float, default=time.time)
