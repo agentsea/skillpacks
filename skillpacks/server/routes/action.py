@@ -9,7 +9,6 @@ from skillpacks.server.models import (
     V1CreateActionEvent,
     V1UserProfile,
 )
-from skillpacks.db.models import ActionRecord
 from skillpacks.base import ActionEvent
 from skillpacks.auth.transport import get_current_user
 
