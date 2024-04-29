@@ -34,6 +34,8 @@ class ActionEvent(WithDB):
         approved: bool = False,
         flagged: bool = False,
         owner_id: Optional[str] = None,
+        model: Optional[str] = None,
+        agent_id: Optional[str] = None,
     ) -> None:
         self.id = str(uuid.uuid4())
         self.prompt = prompt
@@ -46,9 +48,12 @@ class ActionEvent(WithDB):
         self.approved = approved
         self.flagged = flagged
         self.owner_id = owner_id
+        self.model = model
+        self.agent_id = agent_id
 
     def approve(self) -> None:
         self.approved = True
+        self.prompt.approved = True
         self.save()
 
     def to_v1(self) -> V1ActionEvent:
@@ -60,6 +65,10 @@ class ActionEvent(WithDB):
             tool=self.tool,
             namespace=self.namespace,
             created=self.created,
+            approved=self.approved,
+            flagged=self.flagged,
+            model=self.model,
+            agent_id=self.agent_id,
         )
 
     @classmethod
@@ -77,6 +86,8 @@ class ActionEvent(WithDB):
         event.approved = v1.approved
         event.flagged = v1.flagged
         event.owner_id = owner_id
+        event.model = v1.model
+        event.agent_id = v1.agent_id
         return event
 
     def save(self) -> None:
@@ -100,6 +111,8 @@ class ActionEvent(WithDB):
             flagged=self.flagged,
             created=self.created,
             owner_id=self.owner_id,
+            model=self.model,
+            agent_id=self.agent_id,
         )
 
     @classmethod
@@ -117,6 +130,8 @@ class ActionEvent(WithDB):
         event.approved = record.approved
         event.flagged = record.flagged
         event.owner_id = record.owner_id
+        event.model = record.model
+        event.agent_id = record.agent_id
         return event
 
     @classmethod
@@ -207,6 +222,9 @@ class Episode(WithDB):
         result: Optional[Any] = None,
         namespace: str = "default",
         metadata: dict = {},
+        owner_id: Optional[str] = None,
+        model: Optional[str] = None,
+        agent_id: Optional[str] = None,
     ) -> ActionEvent:
         """Records an action to the episode."""
         if isinstance(prompt, str):
@@ -219,6 +237,9 @@ class Episode(WithDB):
             tool=tool,
             namespace=namespace,
             metadata=metadata,
+            owner_id=owner_id,
+            model=model,
+            agent_id=agent_id,
         )
         self.record_event(event)
 
@@ -298,25 +319,29 @@ class Episode(WithDB):
             raise ValueError("No event found")
         event = events[0]
         event.approved = True
+        event.prompt.approved = True
         self.save()
 
     def approve_all(self) -> None:
         """Approve all actions in the episode."""
         for event in self.actions:
             event.approved = True
+            event.prompt.approved = True
         self.save()
 
-    def approve_previous(self, event_id: str) -> None:
-        """Approve the given event and all previous actions."""
+    def approve_prior(self, event_id: str) -> None:
+        """Approve the given event and all prior actions."""
         events = ActionEvent.find(id=event_id)
         if not events:
             raise ValueError("No event found")
         event = events[0]
         event.approved = True
+        event.prompt.approved = True
         for i in range(len(self.actions) - 1):
             if self.actions[i].id == event_id:
                 for j in range(i + 1, len(self.actions)):
                     self.actions[j].approved = True
+                    self.actions[j].prompt.approved = True
         self.save()
 
     def approved_actions(self) -> List[ActionEvent]:

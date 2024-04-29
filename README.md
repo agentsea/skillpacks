@@ -82,8 +82,8 @@ Mark actions as approved
 # approve one
 episode.approve_one(event.id)
 
-# approve all actions before the event
-episode.approve_previous(event.id)
+# approve the event and all actions prior to it
+episode.approve_prior(event.id)
 
 # approve all
 episode.approve_all()
@@ -110,7 +110,7 @@ Get all approved actions for a tool
 actions = ActionEvent.find(tool=desktop.ref(), approved=True)
 ```
 
-Tune a model on the actions
+Tune a model on the actions (In progress)
 
 ```python
 from skillpacks.model import InternVLChat

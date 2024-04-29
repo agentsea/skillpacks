@@ -31,6 +31,8 @@ class ActionRecord(Base):
     metadata_ = Column(Text, default=dict)
     approved = Column(Boolean, default=False)
     flagged = Column(Boolean, default=False)
+    model = Column(String, default=None)
+    agent_id = Column(String, default=None)
     created = Column(Float, default=time.time)
 
     episode_id = Column(String, ForeignKey("episodes.id"), nullable=True)

@@ -38,6 +38,8 @@ class V1ActionEvent(BaseModel):
     namespace: str
     approved: bool = False
     flagged: bool = False
+    model: Optional[str] = None
+    agent_id: Optional[str] = None
     created: float
 
 
@@ -58,6 +60,8 @@ class V1CreateActionEvent(BaseModel):
     metadata: dict = {}
     approved: bool = False
     flagged: bool = False
+    model: Optional[str] = None
+    agent_id: Optional[str] = None
 
 
 class V1Episode(BaseModel):
