@@ -5,7 +5,7 @@ import json
 import os
 
 from pydantic import BaseModel
-from mllm import Prompt, PromptModel
+from mllm import Prompt, V1Prompt
 from sqlalchemy import asc
 
 from .db.conn import WithDB
@@ -59,7 +59,7 @@ class ActionEvent(WithDB):
     def to_v1(self) -> V1ActionEvent:
         return V1ActionEvent(
             id=self.id,
-            prompt=self.prompt.to_schema(),
+            prompt=self.prompt.to_v1(),
             action=self.action,
             result=self.result,
             tool=self.tool,
@@ -77,7 +77,7 @@ class ActionEvent(WithDB):
     ) -> "ActionEvent":
         event = cls.__new__(cls)
         event.id = v1.id
-        event.prompt = Prompt.from_schema(v1.prompt)
+        event.prompt = Prompt.from_v1(v1.prompt)
         event.action = v1.action
         event.result = v1.result
         event.tool = v1.tool

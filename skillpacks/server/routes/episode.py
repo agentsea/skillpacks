@@ -47,7 +47,7 @@ async def record_event(
     episode = episodes[0]
 
     event = ActionEvent(
-        prompt=Prompt.from_schema(data.prompt),
+        prompt=Prompt.from_v1(data.prompt),
         action=data.action,
         tool=data.tool,
         result=data.result,

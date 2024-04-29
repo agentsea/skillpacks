@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, List
 
 from pydantic import BaseModel
-from mllm import PromptModel
+from mllm import V1Prompt
 
 
 class V1ToolRef(BaseModel):
@@ -31,7 +31,7 @@ class V1ActionEvent(BaseModel):
     """An action that has occurred"""
 
     id: str
-    prompt: PromptModel
+    prompt: V1Prompt
     action: V1Action
     result: Any
     tool: V1ToolRef
@@ -52,7 +52,7 @@ class V1ActionEvents(BaseModel):
 class V1CreateActionEvent(BaseModel):
     """An action that has occurred"""
 
-    prompt: PromptModel
+    prompt: V1Prompt
     action: V1Action
     result: Any
     tool: V1ToolRef

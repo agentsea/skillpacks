@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from agent_tools import Action, Observation
+from toolfuse import Action, Observation
 
-from skillpacks.task import Attempt
+from skillpacks.task_old import Attempt
 
 
 class Selector(ABC):

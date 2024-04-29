@@ -4,7 +4,7 @@ from enum import Enum
 from dataclasses import dataclass
 import uuid
 
-from agent_tools import Tool
+from toolfuse import Tool
 
 from skillpacks.models.v1alpha import (
     V1ActionEvent,

@@ -22,7 +22,7 @@ async def create_action_event(
     data: V1CreateActionEvent,
 ):
     event = ActionEvent(
-        prompt=Prompt.from_schema(data.prompt),
+        prompt=Prompt.from_v1(data.prompt),
         action=data.action,
         tool=data.tool,
         result=data.result,

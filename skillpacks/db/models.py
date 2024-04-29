@@ -8,16 +8,6 @@ from sqlalchemy.dialects.postgresql import JSONB  # If using PostgreSQL
 Base = declarative_base()
 
 
-# def __init__(
-#     self,
-#     prompt: Prompt,
-#     action: V1Action,
-#     result: Any,
-#     tool: V1ToolRef,
-#     namespace: str = "default",
-#     metadata: dict = {},
-
-
 class ActionRecord(Base):
     __tablename__ = "actions"
 
