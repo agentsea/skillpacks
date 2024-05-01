@@ -2,14 +2,7 @@ from typing import Optional, Dict, Any, List
 
 from pydantic import BaseModel
 from mllm import V1Prompt
-
-
-class V1ToolRef(BaseModel):
-    """A reference to a tool or device"""
-
-    module: str
-    name: str
-    version: Optional[str] = None
+from toolfuse.models import V1ToolRef
 
 
 class V1Action(BaseModel):
