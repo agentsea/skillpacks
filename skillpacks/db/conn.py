@@ -1,11 +1,13 @@
 import os
 import time
+import logging
 
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker
 
 from .models import Base
 
+logger = logging.getLogger(__name__)
 
 DB_TYPE = os.environ.get("DB_TYPE", "sqlite")
 
@@ -13,7 +15,7 @@ DB_TYPE = os.environ.get("DB_TYPE", "sqlite")
 def get_pg_conn() -> Engine:
     # Helper function to get environment variable with fallback
     def get_env_var(key: str) -> str:
-        task_key = f"SKILL_{key}"
+        task_key = f"SKILLS_{key}"
         value = os.environ.get(task_key)
         if value is None:
             value = os.environ.get(key)
@@ -27,7 +29,7 @@ def get_pg_conn() -> Engine:
     db_host = get_env_var("DB_HOST")
     db_name = get_env_var("DB_NAME")
 
-    print(f"\nconnecting to db on postgres host '{db_host}' with db '{db_name}'")
+    logger.debug(f"connecting to db on postgres host '{db_host}' with db '{db_name}'")
     engine = create_engine(
         f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_name}",
         client_encoding="utf8",
@@ -37,12 +39,12 @@ def get_pg_conn() -> Engine:
 
 
 def get_sqlite_conn() -> Engine:
-    db_name = os.environ.get("SKILL_DB_NAME", "skills.db")
-    db_path = os.environ.get("SKILL_DB_PATH", "./.data")
-    db_test = os.environ.get("SKILL_DB_TEST", "false") == "true"
+    db_name = os.environ.get("SKILLS_DB_NAME", "skills.db")
+    db_path = os.environ.get("SKILLS_DB_PATH", "./.data")
+    db_test = os.environ.get("SKILLS_DB_TEST", "false") == "true"
     if db_test:
         db_name = f"skill_test_{int(time.time())}.db"
-    print(f"\nconnecting to local sqlite db ./data/{db_name}")
+    logger.debug(f"connecting to local sqlite db ./data/{db_name}")
     os.makedirs(os.path.dirname(f"{db_path}/{db_name}"), exist_ok=True)
     engine = create_engine(f"sqlite:///{db_path}/{db_name}")
     return engine
