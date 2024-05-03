@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from mllm import V1Prompt
 from toolfuse.models import V1ToolRef
 
@@ -8,16 +8,27 @@ from toolfuse.models import V1ToolRef
 class V1Action(BaseModel):
     """An action on a tool"""
 
-    name: str
-    parameters: Dict[str, Any]
+    name: str = Field(..., description="The name of the action to be performed.")
+    parameters: Dict[str, Any] = Field(
+        ...,
+        description="A dictionary containing parameters necessary for the action, with keys as parameter names and values as parameter details.",
+    )
 
 
 class V1ActionSelection(BaseModel):
     """An action selection from the model"""
 
-    observation: str
-    reason: str
-    action: V1Action
+    observation: str = Field(
+        ..., description="The observed data based on which the model selects an action."
+    )
+    reason: str = Field(
+        ...,
+        description="The reason why this action was chosen, explaining the logic or rationale behind the decision.",
+    )
+    action: V1Action = Field(
+        ...,
+        description="The action object detailing the specific action to be taken, including its name and parameters.",
+    )
 
 
 class V1ActionEvent(BaseModel):
