@@ -2,9 +2,7 @@ import time
 from typing import Dict, Any, Optional, List
 import uuid
 import json
-import os
 
-from pydantic import BaseModel
 from mllm import Prompt, V1Prompt
 from sqlalchemy import asc
 
@@ -17,7 +15,6 @@ from .server.models import (
     V1Action,
     V1Episode,
 )
-from .env import HUB_API_KEY_ENV
 
 
 class ActionEvent(WithDB):
@@ -228,7 +225,7 @@ class Episode(WithDB):
     ) -> ActionEvent:
         """Records an action to the episode."""
         if isinstance(prompt, str):
-            prompt = Prompt.find(prompt_id=prompt)[0]
+            prompt = Prompt.find(id=prompt)[0]
 
         event = ActionEvent(
             prompt=prompt,
@@ -292,6 +289,15 @@ class Episode(WithDB):
 
         raise ValueError("no session")
 
+    def get_event(self, id: str) -> ActionEvent:
+        """Retrieves a single action event by ID."""
+        for db in self.get_db():
+            record = db.query(ActionRecord).filter(ActionRecord.id == id).first()
+            if record:
+                return ActionEvent.from_record(record)
+            raise ValueError("No action event found with id " + id)
+        raise ValueError("no session")
+
     def delete(self) -> None:
         """Deletes the episode and all associated actions from the database."""
         for db in self.get_db():
@@ -314,34 +320,30 @@ class Episode(WithDB):
 
     def approve_one(self, event_id: str) -> None:
         """Approve the given event."""
-        events = ActionEvent.find(id=event_id)
-        if not events:
-            raise ValueError("No event found")
-        event = events[0]
-        event.approved = True
-        event.prompt.approved = True
-        self.save()
+        for event in self.actions:
+            if event.id == event_id:
+                event.approved = True
+                event.prompt.approved = True
+                event.save()
+                break
 
     def approve_all(self) -> None:
         """Approve all actions in the episode."""
         for event in self.actions:
             event.approved = True
             event.prompt.approved = True
+            event.save()
         self.save()
 
     def approve_prior(self, event_id: str) -> None:
         """Approve the given event and all prior actions."""
-        events = ActionEvent.find(id=event_id)
-        if not events:
-            raise ValueError("No event found")
-        event = events[0]
-        event.approved = True
-        event.prompt.approved = True
+        self.approve_one(event_id)
         for i in range(len(self.actions) - 1):
             if self.actions[i].id == event_id:
                 for j in range(i + 1, len(self.actions)):
                     self.actions[j].approved = True
                     self.actions[j].prompt.approved = True
+                    self.actions[j].save()
         self.save()
 
     def approved_actions(self) -> List[ActionEvent]:

@@ -19,7 +19,7 @@ class V1ActionSelection(BaseModel):
     """An action selection from the model"""
 
     observation: str = Field(
-        ..., description="The observed data based on which the model selects an action."
+        ..., description="Observations of the current state of the environment"
     )
     reason: str = Field(
         ...,
