@@ -69,7 +69,7 @@ Record the action in the episode
 
 ```python
 event = episode.record(
-    prompt=response.prompt_id,
+    prompt=response.prompt,
     action=v1action,
     tool=desktop.ref(),
     result=result,
