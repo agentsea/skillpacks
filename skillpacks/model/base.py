@@ -1,13 +1,13 @@
 # type: ignore
 from typing import List
 
-from skillpacks.history import Histories
+from skillpacks import ActionEvent
 from skillpacks.select import Selector
 
 
 class ActionModel:
 
-    def tune(histories: Histories) -> str:
+    def tune(events: List[ActionEvent]) -> str:
         """ """
         pass
 
