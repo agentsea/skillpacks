@@ -2268,13 +2268,13 @@ traitlets = "*"
 
 [[package]]
 name = "mllm"
-version = "0.1.18"
+version = "0.1.20"
 description = "Multimodal Large Language Models"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "mllm-0.1.18-py3-none-any.whl", hash = "sha256:a644c951ce480b2ef5bd3dc6cdd2211a49b6c203903276e87505b06a4265fdc5"},
-    {file = "mllm-0.1.18.tar.gz", hash = "sha256:4cd1d6ec03e761a839dcc2fcd36df5ca482f175a701738c08c7a97a43fb3ba2e"},
+    {file = "mllm-0.1.20-py3-none-any.whl", hash = "sha256:d010ee6d01e420d106628b4ea40b9860effbc36672a81eaa17d36441726bc996"},
+    {file = "mllm-0.1.20.tar.gz", hash = "sha256:61b2c2e38ce5b0ae43c489f4ad91de96d172f1a8be9619a137f69cbabd21581a"},
 ]
 
 [package.dependencies]
@@ -5062,4 +5062,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b4cefc2d9e71d7ac59588a9394a498d5659970b6ae3081bd756b546cbbb751fc"
+content-hash = "75f4202466ef3cc8dbddefe45447de22c93f0aa356a3974dca5dcd15b8386579"
