@@ -66,6 +66,7 @@ class ActionEvent(WithDB):
             flagged=self.flagged,
             model=self.model,
             agent_id=self.agent_id,
+            metadata=self.metadata,
         )
 
     @classmethod
@@ -85,6 +86,7 @@ class ActionEvent(WithDB):
         event.owner_id = owner_id
         event.model = v1.model
         event.agent_id = v1.agent_id
+        event.metadata = v1.metadata
         return event
 
     def save(self) -> None:

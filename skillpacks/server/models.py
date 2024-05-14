@@ -45,6 +45,7 @@ class V1ActionEvent(BaseModel):
     model: Optional[str] = None
     agent_id: Optional[str] = None
     created: float
+    metadata: dict = {}
 
 
 class V1ActionEvents(BaseModel):
