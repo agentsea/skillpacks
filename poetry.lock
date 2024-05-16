@@ -2159,13 +2159,13 @@ test = ["ipykernel", "pre-commit", "pytest", "pytest-cov", "pytest-timeout"]
 
 [[package]]
 name = "litellm"
-version = "1.37.9"
+version = "1.37.12"
 description = "Library to easily interface with LLM API providers"
 optional = false
 python-versions = "!=2.7.*,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,!=3.7.*,>=3.8"
 files = [
-    {file = "litellm-1.37.9-py3-none-any.whl", hash = "sha256:f5e96df4e28e302a5df4e8f5599ac35ffbeebbacf4d68f4c609155e24ba8fa03"},
-    {file = "litellm-1.37.9.tar.gz", hash = "sha256:2a2fecacde1e3a414b3865c99e5be3b5cffd21433e2648f660116f1ac9333294"},
+    {file = "litellm-1.37.12-py3-none-any.whl", hash = "sha256:5b42b3c98e329a24f48112f488dd1c5e4c635fb5b1a098b50c2cab789cb08172"},
+    {file = "litellm-1.37.12.tar.gz", hash = "sha256:2188991e9aa903c9adcec9a265b58ad3b6d9acbe0b0f194b3321d69fa4102729"},
 ]
 
 [package.dependencies]
@@ -2268,17 +2268,17 @@ traitlets = "*"
 
 [[package]]
 name = "mllm"
-version = "0.1.26"
+version = "0.1.27"
 description = "Multimodal Large Language Models"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "mllm-0.1.26-py3-none-any.whl", hash = "sha256:c3cd38c7c8604891f14d2bb18ee332b3ee5ce121452f5132e15fb7e89acaa751"},
-    {file = "mllm-0.1.26.tar.gz", hash = "sha256:8241e062038be5e103df3c2317187e26ffbb6c2601b2250b08a76adb6470d1ff"},
+    {file = "mllm-0.1.27-py3-none-any.whl", hash = "sha256:4bf3e9c5c7fdd81961952db0dd952fcc2247c733c5111922210d4707ec32156e"},
+    {file = "mllm-0.1.27.tar.gz", hash = "sha256:1a8404c8f30e3c50016f140f421844db461aeea96f756156fa9364c4cf2f6fbc"},
 ]
 
 [package.dependencies]
-litellm = ">=1.35.29,<2.0.0"
+litellm = ">=1.37.12,<2.0.0"
 tenacity = ">=8.2.3,<9.0.0"
 threadmem = ">=0.2.27,<0.3.0"
 
@@ -5046,20 +5046,20 @@ multidict = ">=4.0"
 
 [[package]]
 name = "zipp"
-version = "3.18.1"
+version = "3.18.2"
 description = "Backport of pathlib-compatible object wrapper for zip files"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "zipp-3.18.1-py3-none-any.whl", hash = "sha256:206f5a15f2af3dbaee80769fb7dc6f249695e940acca08dfb2a4769fe61e538b"},
-    {file = "zipp-3.18.1.tar.gz", hash = "sha256:2884ed22e7d8961de1c9a05142eb69a247f120291bc0206a00a7642f09b5b715"},
+    {file = "zipp-3.18.2-py3-none-any.whl", hash = "sha256:dce197b859eb796242b0622af1b8beb0a722d52aa2f57133ead08edd5bf5374e"},
+    {file = "zipp-3.18.2.tar.gz", hash = "sha256:6278d9ddbcfb1f1089a88fde84481528b07b0e10474e09dcfe53dad4069fa059"},
 ]
 
 [package.extras]
 docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
-testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy", "pytest-ruff (>=0.2.1)"]
+testing = ["big-O", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more-itertools", "pytest (>=6,!=8.1.*)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy", "pytest-ruff (>=0.2.1)"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "a3b244fbad4e8bedb7324c6557baeab1ad55f01daa40a9e53d8f99af16069570"
+content-hash = "34da22c358395bbe72fc050389114c4cc05e08155b9ac6bc53785b09ecadbd2b"

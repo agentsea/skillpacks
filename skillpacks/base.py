@@ -98,6 +98,7 @@ class ActionEvent(WithDB):
 
     def to_record(self) -> ActionRecord:
         """Converts the instance to a database record."""
+        self.prompt.save()
         return ActionRecord(
             id=self.id,
             prompt_id=self.prompt.id,
