@@ -5,7 +5,8 @@ import logging
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker
 
-from .models import Base
+from skillpacks.db.models import Base
+from skillpacks import config
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +40,13 @@ def get_pg_conn() -> Engine:
 
 
 def get_sqlite_conn() -> Engine:
-    db_name = os.environ.get("SKILLS_DB_NAME", "skills.db")
-    db_path = os.environ.get("SKILLS_DB_PATH", "./.data")
-    db_test = os.environ.get("SKILLS_DB_TEST", "false") == "true"
-    if db_test:
-        db_name = f"skill_test_{int(time.time())}.db"
-    logger.debug(f"connecting to local sqlite db ./data/{db_name}")
-    os.makedirs(os.path.dirname(f"{db_path}/{db_name}"), exist_ok=True)
-    engine = create_engine(f"sqlite:///{db_path}/{db_name}")
+    logger.debug(
+        f"connecting to local sqlite db {config.AGENTSEA_DB_DIR}/{config.DB_NAME}"
+    )
+    os.makedirs(
+        os.path.dirname(f"{config.AGENTSEA_DB_DIR}/{config.DB_NAME}"), exist_ok=True
+    )
+    engine = create_engine(f"sqlite:///{config.AGENTSEA_DB_DIR}/{config.DB_NAME}")
     return engine
 
 
