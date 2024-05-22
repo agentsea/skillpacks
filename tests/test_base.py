@@ -19,14 +19,14 @@ def test_all():
     event1 = episode.record(
         prompt1.id,
         V1Action(name="open_browser", parameters={"app": "chrome"}),
-        V1ToolRef(module="agentdesk", name="Desktop", version="0.1.2"),
+        V1ToolRef(module="agentdesk", type="Desktop", version="0.1.2"),
     )
 
     prompt2 = Prompt(thread, response)
     event2 = episode.record(
         prompt2,
         V1Action(name="open_browser", parameters={"app": "firefox"}),
-        V1ToolRef(module="agentdesk", name="Desktop", version="0.1.3"),
+        V1ToolRef(module="agentdesk", type="Desktop", version="0.1.3"),
     )
 
     event1_found = episode.get_event(event1.id)
