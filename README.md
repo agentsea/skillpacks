@@ -122,6 +122,19 @@ model = InternVLChat(runtime=runtime)
 result = model.train(actions=actions, follow=True, publish=True)
 ```
 
+## Integrations
+
+Skillpacks is integrated with:
+
+- [MLLM](https://github.com/agentsea/mllm) A prompt management, routing, and schema validation library for multimodal LLMs
+- [Taskara](https://github.com/agentsea/taskara) A task management library for AI agents
+- [Surfkit](https://github.com/agentsea/surfkit) A platform for AI agents
+- [Threadmem](https://github.com/agentsea/threadmem) A thread management library for AI agents
+
+## Community
+
+Come join us on [Slack](https://agentsea.slack.com/join/signup)
+
 ## Backends
 
 Thread and prompt storage can be backed by:
