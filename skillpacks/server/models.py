@@ -29,6 +29,10 @@ class V1ActionSelection(BaseModel):
         ...,
         description="The action object detailing the specific action to be taken, including its name and parameters.",
     )
+    expectation: str = Field(
+        None,
+        description="The expected outcome of the action e.g. 'a login page should open'",
+    )
 
 
 class V1ActionEvent(BaseModel):
