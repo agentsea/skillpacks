@@ -48,3 +48,17 @@ class EpisodeRecord(Base):
         back_populates="episode",
         cascade="all, delete-orphan",
     )
+
+
+class JsonBlobRecord(Base):
+    __tablename__ = "json_blobs"
+
+    id = Column(String, primary_key=True)
+    owner_id = Column(String, nullable=True)
+    schema = Column(Text, nullable=True)
+    data = Column(Text, nullable=False)
+    namespace = Column(String, default="default")
+    tags = Column(Text, default=list)
+    labels = Column(Text, default=list)
+    created = Column(Float, default=time.time)
+    updated = Column(Float, default=time.time)

@@ -66,41 +66,6 @@ class Florence2(OnlineCompletionModel):
             if not param.requires_grad:
                 print(f"Parameter {name} is not trainable")
 
-    def learn(self, prompt: str, image: str | Image.Image, response: str) -> float:
-        if isinstance(image, str):
-            image = Image.open(requests.get(image, stream=True).raw)
-        
-        self.model.train()
-
-        self.check_trainable_parameters()
-        
-        # Prepare input
-        inputs = self.processor(text=[prompt], images=[image], return_tensors="pt", padding=True).to(self.device)
-        labels = self.processor.tokenizer(text=[response], return_tensors="pt", padding=True, return_token_type_ids=False).input_ids.to(self.device)
-        
-        # Forward pass
-        outputs = self.model(input_ids=inputs["input_ids"], pixel_values=inputs["pixel_values"], labels=labels)
-        loss = outputs.loss
-        
-        # Normalize the loss to account for gradient accumulation
-        loss = loss / self.gradient_accumulation_steps
-        
-        # Backward pass
-        loss.backward()
-        
-        self.total_loss += loss.item()
-
-        if self.use_wandb:
-            wandb.log({"loss": loss.item()})
-
-        self.num_examples += 1
-
-        # Only update weights and zero gradients after accumulating enough steps
-        if self.num_examples % self.gradient_accumulation_steps == 0:
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-
-        return loss.item() * self.gradient_accumulation_steps  # Return the non-normalized loss for logging
 
     def complete(self, prompt: str, image: str | Image.Image) -> str:
         if isinstance(image, str):
