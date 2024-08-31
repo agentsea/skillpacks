@@ -28,7 +28,7 @@ class ActionEvent(WithDB):
         result: Optional[Any] = None,
         namespace: str = "default",
         metadata: dict = {},
-        approved: bool = False,
+        approved: Optional[bool] = None,
         flagged: bool = False,
         owner_id: Optional[str] = None,
         model: Optional[str] = None,
@@ -321,6 +321,15 @@ class Episode(WithDB):
             else:
                 raise ValueError("Episode record not found")
 
+    def fail_one(self, event_id: str) -> None:
+        """Fail the given event."""
+        for event in self.actions:
+            if event.id == event_id:
+                event.approved = False
+                event.prompt.approved = False
+                event.save()
+                break
+
     def approve_one(self, event_id: str) -> None:
         """Approve the given event."""
         for event in self.actions:
@@ -338,6 +347,14 @@ class Episode(WithDB):
             event.save()
         self.save()
 
+    def fail_all(self) -> None:
+        """Fail all actions in the episode."""
+        for event in self.actions:
+            event.approved = False
+            event.prompt.approved = False
+            event.save()
+        self.save()
+
     def approve_prior(self, event_id: str) -> None:
         """Approve the given event and all prior actions."""
         self.approve_one(event_id)
@@ -346,6 +363,17 @@ class Episode(WithDB):
                 for j in range(i + 1, len(self.actions)):
                     self.actions[j].approved = True
                     self.actions[j].prompt.approved = True
+                    self.actions[j].save()
+        self.save()
+
+    def fail_prior(self, event_id: str) -> None:
+        """Approve the given event and all prior actions."""
+        self.approve_one(event_id)
+        for i in range(len(self.actions) - 1):
+            if self.actions[i].id == event_id:
+                for j in range(i + 1, len(self.actions)):
+                    self.actions[j].approved = False
+                    self.actions[j].prompt.approved = False
                     self.actions[j].save()
         self.save()
 
