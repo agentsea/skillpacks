@@ -29,6 +29,7 @@ class ActionEvent(WithDB):
         tool: V1ToolRef,
         prompt: Optional[Prompt] = None,
         result: Optional[Any] = None,
+        end_state: Optional[V1EnvState] = None,
         namespace: str = "default",
         metadata: dict = {},
         approved: Optional[bool] = None,
@@ -42,6 +43,7 @@ class ActionEvent(WithDB):
         self.prompt = prompt
         self.action = action
         self.result = result
+        self.end_state = end_state
         self.tool = tool
         self.namespace = namespace
         self.metadata = metadata
@@ -65,6 +67,7 @@ class ActionEvent(WithDB):
             prompt=self.prompt.to_v1() if self.prompt else None,
             action=self.action,
             result=self.result,
+            end_state=self.end_state,
             tool=self.tool,
             namespace=self.namespace,
             created=self.created,
@@ -85,6 +88,7 @@ class ActionEvent(WithDB):
         event.state = v1.state
         event.action = v1.action
         event.result = v1.result
+        event.end_state = v1.end_state
         event.tool = v1.tool
         event.namespace = v1.namespace
         event.created = v1.created
@@ -115,6 +119,9 @@ class ActionEvent(WithDB):
             state=json.dumps(self.state.model_dump()),
             action=json.dumps(self.action.model_dump()),
             result=json.dumps(self.result),
+            end_state=(
+                json.dumps(self.end_state.model_dump()) if self.end_state else None
+            ),
             tool=json.dumps(self.tool.model_dump()),
             namespace=self.namespace,
             metadata_=json.dumps(self.metadata),
@@ -135,6 +142,11 @@ class ActionEvent(WithDB):
         event.state = V1EnvState.model_validate_json(str(record.state))
         event.action = V1Action.model_validate_json(str(record.action))
         event.result = json.loads(str(record.result))
+        event.end_state = (
+            V1EnvState.model_validate_json(str(record.end_state))
+            if record.end_state  # type: ignore
+            else None
+        )
         event.tool = V1ToolRef.model_validate_json(str(record.tool))
         event.namespace = record.namespace
         event.metadata = json.loads(str(record.metadata_))

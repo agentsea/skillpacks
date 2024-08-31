@@ -18,6 +18,7 @@ class ActionRecord(Base):
     state = Column(Text)
     action = Column(Text)
     result = Column(Text)
+    end_state = Column(Text, nullable=True)
     tool = Column(Text)
     metadata_ = Column(Text, default=dict)
     approved = Column(Boolean, nullable=True)

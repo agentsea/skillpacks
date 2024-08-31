@@ -48,6 +48,7 @@ class V1ActionEvent(BaseModel):
     state: V1EnvState
     action: V1Action
     result: Any
+    end_state: Optional[V1EnvState] = None
     tool: V1ToolRef
     namespace: str
     prompt: Optional[V1Prompt] = None
