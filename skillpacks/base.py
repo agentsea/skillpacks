@@ -2,6 +2,7 @@ import time
 from typing import Dict, Any, Optional, List
 import uuid
 import json
+from enum import Enum
 
 from mllm import Prompt, V1Prompt
 from sqlalchemy import asc
@@ -14,6 +15,7 @@ from .server.models import (
     V1ActionSelection,
     V1Action,
     V1Episode,
+    V1EnvState,
 )
 
 
@@ -22,9 +24,10 @@ class ActionEvent(WithDB):
 
     def __init__(
         self,
-        prompt: Prompt,
+        state: V1EnvState,
         action: V1Action,
         tool: V1ToolRef,
+        prompt: Optional[Prompt] = None,
         result: Optional[Any] = None,
         namespace: str = "default",
         metadata: dict = {},
@@ -35,6 +38,7 @@ class ActionEvent(WithDB):
         agent_id: Optional[str] = None,
     ) -> None:
         self.id = str(uuid.uuid4())
+        self.state = state
         self.prompt = prompt
         self.action = action
         self.result = result
@@ -50,13 +54,15 @@ class ActionEvent(WithDB):
 
     def approve(self) -> None:
         self.approved = True
-        self.prompt.approved = True
+        if self.prompt:
+            self.prompt.approved = True
         self.save()
 
     def to_v1(self) -> V1ActionEvent:
         return V1ActionEvent(
             id=self.id,
-            prompt=self.prompt.to_v1(),
+            state=self.state,
+            prompt=self.prompt.to_v1() if self.prompt else None,
             action=self.action,
             result=self.result,
             tool=self.tool,
@@ -75,7 +81,8 @@ class ActionEvent(WithDB):
     ) -> "ActionEvent":
         event = cls.__new__(cls)
         event.id = v1.id
-        event.prompt = Prompt.from_v1(v1.prompt)
+        event.prompt = Prompt.from_v1(v1.prompt) if v1.prompt else None
+        event.state = v1.state
         event.action = v1.action
         event.result = v1.result
         event.tool = v1.tool
@@ -98,10 +105,14 @@ class ActionEvent(WithDB):
 
     def to_record(self) -> ActionRecord:
         """Converts the instance to a database record."""
-        self.prompt.save()
+        prompt_id = None
+        if self.prompt:
+            self.prompt.save()
+            prompt_id = self.prompt.id
         return ActionRecord(
             id=self.id,
-            prompt_id=self.prompt.id,
+            prompt_id=prompt_id,
+            state=json.dumps(self.state.model_dump()),
             action=json.dumps(self.action.model_dump()),
             result=json.dumps(self.result),
             tool=json.dumps(self.tool.model_dump()),
@@ -120,7 +131,8 @@ class ActionEvent(WithDB):
         """Creates an instance from a database record using the __new__ method."""
         event = cls.__new__(cls)
         event.id = record.id
-        event.prompt = Prompt.find(id=str(record.prompt_id))[0]
+        event.prompt = Prompt.find(id=str(record.prompt_id))[0] if record.prompt_id else None  # type: ignore
+        event.state = V1EnvState.model_validate_json(str(record.state))
         event.action = V1Action.model_validate_json(str(record.action))
         event.result = json.loads(str(record.result))
         event.tool = V1ToolRef.model_validate_json(str(record.tool))
@@ -216,9 +228,10 @@ class Episode(WithDB):
 
     def record(
         self,
-        prompt: Prompt | str,
+        state: V1EnvState,
         action: V1Action,
         tool: V1ToolRef,
+        prompt: Optional[Prompt | str] = None,
         result: Optional[Any] = None,
         namespace: str = "default",
         metadata: dict = {},
@@ -231,6 +244,7 @@ class Episode(WithDB):
             prompt = Prompt.find(id=prompt)[0]
 
         event = ActionEvent(
+            state=state,
             prompt=prompt,
             action=action,
             result=result,
@@ -326,7 +340,8 @@ class Episode(WithDB):
         for event in self.actions:
             if event.id == event_id:
                 event.approved = False
-                event.prompt.approved = False
+                if event.prompt:
+                    event.prompt.approved = False
                 event.save()
                 break
 
@@ -335,7 +350,8 @@ class Episode(WithDB):
         for event in self.actions:
             if event.id == event_id:
                 event.approved = True
-                event.prompt.approved = True
+                if event.prompt:
+                    event.prompt.approved = True
                 event.save()
                 break
 
@@ -343,7 +359,8 @@ class Episode(WithDB):
         """Approve all actions in the episode."""
         for event in self.actions:
             event.approved = True
-            event.prompt.approved = True
+            if event.prompt:
+                event.prompt.approved = True
             event.save()
         self.save()
 
@@ -351,7 +368,8 @@ class Episode(WithDB):
         """Fail all actions in the episode."""
         for event in self.actions:
             event.approved = False
-            event.prompt.approved = False
+            if event.prompt:
+                event.prompt.approved = False
             event.save()
         self.save()
 
@@ -362,7 +380,8 @@ class Episode(WithDB):
             if self.actions[i].id == event_id:
                 for j in range(i + 1, len(self.actions)):
                     self.actions[j].approved = True
-                    self.actions[j].prompt.approved = True
+                    if self.actions[j].prompt:
+                        self.actions[j].prompt.approved = True  # type: ignore
                     self.actions[j].save()
         self.save()
 
@@ -373,7 +392,8 @@ class Episode(WithDB):
             if self.actions[i].id == event_id:
                 for j in range(i + 1, len(self.actions)):
                     self.actions[j].approved = False
-                    self.actions[j].prompt.approved = False
+                    if self.actions[j].prompt:
+                        self.actions[j].prompt.approved = False  # type: ignore
                     self.actions[j].save()
         self.save()
 

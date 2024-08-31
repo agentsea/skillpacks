@@ -35,15 +35,22 @@ class V1ActionSelection(BaseModel):
     )
 
 
+class V1EnvState(BaseModel):
+    """The state of the environment"""
+
+    image: Optional[str] = None
+
+
 class V1ActionEvent(BaseModel):
     """An action that has occurred"""
 
     id: str
-    prompt: V1Prompt
+    state: V1EnvState
     action: V1Action
     result: Any
     tool: V1ToolRef
     namespace: str
+    prompt: Optional[V1Prompt] = None
     approved: Optional[bool] = None
     flagged: bool = False
     model: Optional[str] = None
@@ -61,12 +68,13 @@ class V1ActionEvents(BaseModel):
 class V1CreateActionEvent(BaseModel):
     """An action that has occurred"""
 
-    prompt: V1Prompt
+    state: V1EnvState
     action: V1Action
     result: Any
     tool: V1ToolRef
     namespace: str
     metadata: dict = {}
+    prompt: Optional[V1Prompt] = None
     approved: Optional[bool] = None
     flagged: bool = False
     model: Optional[str] = None

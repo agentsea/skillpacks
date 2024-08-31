@@ -22,10 +22,11 @@ async def create_action_event(
     data: V1CreateActionEvent,
 ):
     event = ActionEvent(
-        prompt=Prompt.from_v1(data.prompt),
+        state=data.state,
         action=data.action,
         tool=data.tool,
         result=data.result,
+        prompt=Prompt.from_v1(data.prompt) if data.prompt else None,
         namespace=data.namespace,
         metadata=data.metadata,
         approved=data.approved,
