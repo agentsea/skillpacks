@@ -30,7 +30,7 @@ def test_all():
     )
 
     event1_found = episode.get_event(event1.id)
-    assert event1_found.approved == False
+    assert event1_found.approved == None
 
     episode.approve_one(event1.id)
 

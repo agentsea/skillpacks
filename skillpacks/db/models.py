@@ -19,7 +19,7 @@ class ActionRecord(Base):
     result = Column(Text)
     tool = Column(Text)
     metadata_ = Column(Text, default=dict)
-    approved = Column(Boolean, default=False)
+    approved = Column(Boolean, nullable=True)
     flagged = Column(Boolean, default=False)
     model = Column(String, default=None)
     agent_id = Column(String, default=None)

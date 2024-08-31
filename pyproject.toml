@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "skillpacks"
-version = "0.1.36"
+version = "0.1.37"
 description = "Pluggable skills for AI agents"
 authors = ["Patrick Barker <patrickbarkerco@gmail.com>"]
 license = "Apache 2.0"

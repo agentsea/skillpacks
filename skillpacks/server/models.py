@@ -44,7 +44,7 @@ class V1ActionEvent(BaseModel):
     result: Any
     tool: V1ToolRef
     namespace: str
-    approved: bool = False
+    approved: Optional[bool] = None
     flagged: bool = False
     model: Optional[str] = None
     agent_id: Optional[str] = None
@@ -67,7 +67,7 @@ class V1CreateActionEvent(BaseModel):
     tool: V1ToolRef
     namespace: str
     metadata: dict = {}
-    approved: bool = False
+    approved: Optional[bool] = None
     flagged: bool = False
     model: Optional[str] = None
     agent_id: Optional[str] = None
