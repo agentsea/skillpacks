@@ -7,4 +7,5 @@ from .base import (
     V1ActionSelection,
     V1Episode,
     V1Prompt,
+    V1EnvState,
 )
