@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "skillpacks"
-version = "0.1.40"
+version = "0.1.42"
 description = "Pluggable skills for AI agents"
 authors = ["Patrick Barker <patrickbarkerco@gmail.com>"]
 license = "Apache 2.0"
@@ -11,7 +11,7 @@ python = "^3.10"
 pydantic = "^2.6.1"
 sqlalchemy = "^2.0.27"
 devicebay = "^0.1.26"
-mllm = "^0.1.36"
+mllm = "^0.1.37"
 
 [tool.poetry.group.openai.dependencies]
 openai = "^1.12.0"
