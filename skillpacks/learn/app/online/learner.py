@@ -2,7 +2,7 @@ from transformers import AutoModelForCausalLM, AutoProcessor
 import torch
 from torch.optim import AdamW
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 model = AutoModelForCausalLM.from_pretrained(
     "microsoft/Florence-2-base-ft",
