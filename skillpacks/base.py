@@ -1,7 +1,7 @@
 import time
 from typing import Dict, Any, Optional, List
-import uuid
 import json
+import shortuuid
 
 from mllm import Prompt
 from sqlalchemy import asc
@@ -37,9 +37,8 @@ class ActionEvent(WithDB):
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
         reviews: Optional[List[Review]] = None,
-        id: Optional[str] = None,
     ) -> None:
-        self.id = id or str(uuid.uuid4())
+        self.id = shortuuid.uuid()
         self.state = state
         self.prompt = prompt
         self.action = action
@@ -237,7 +236,7 @@ class Episode(WithDB):
         labels: Dict[str, Any] = {},
         owner_id: Optional[str] = None,
     ) -> None:
-        self.id = str(uuid.uuid4())
+        self.id = shortuuid.uuid()
         self.actions = actions
         self.created = time.time()
         self.updated = time.time()
@@ -259,7 +258,7 @@ class Episode(WithDB):
         """Creates an instance from a V1Episode object."""
         episode = cls.__new__(cls)
         episode.id = str(
-            uuid.uuid4()
+            shortuuid.uuid()
         )  # Generate a new ID or retrieve from context if needed
         episode.actions = [ActionEvent.from_v1(action) for action in v1.actions]
         episode.tags = v1.tags
