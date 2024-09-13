@@ -32,9 +32,11 @@ def test_all():
     )
 
     event1_found = episode.get_event(event1.id)
-    assert event1_found.approved == None
+    assert event1_found.reviews == []
 
-    episode.approve_one(event1.id)
+    episode.approve_one(
+        event1.id, reviewer="tom@myspace.com", reviewer_type="human", reason="good"
+    )
 
     event1_found = episode.get_event(event1.id)
-    assert event1_found.approved == True
+    assert len(event1_found.reviews) == 1

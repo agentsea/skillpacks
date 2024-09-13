@@ -11,6 +11,7 @@ from skillpacks.server.models import (
 )
 from skillpacks.base import ActionEvent
 from skillpacks.auth.transport import get_current_user
+from skillpacks.review import Review
 
 
 router = APIRouter()
@@ -29,7 +30,7 @@ async def create_action_event(
         prompt=Prompt.from_v1(data.prompt) if data.prompt else None,
         namespace=data.namespace,
         metadata=data.metadata,
-        approved=data.approved,
+        reviews=[Review.from_v1(review) for review in data.reviews],
         flagged=data.flagged,
         owner_id=current_user.email,
     )

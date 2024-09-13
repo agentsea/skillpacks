@@ -1,8 +1,27 @@
 from typing import Any, Dict, List, Optional
+from enum import Enum
 
 from mllm import V1Prompt
 from pydantic import BaseModel, Field
 from toolfuse.models import V1ToolRef
+
+
+class ReviewerType(Enum):
+    HUMAN = "human"
+    AGENT = "agent"
+
+
+class V1Review(BaseModel):
+    """A review of an agent action"""
+
+    id: str
+    reviewer: str
+    approved: bool
+    reviewer_type: str = ReviewerType.HUMAN.value
+    created: float
+    updated: Optional[float] = None
+    reason: Optional[str] = None
+    parent_id: Optional[str] = None
 
 
 class V1Action(BaseModel):
@@ -52,7 +71,7 @@ class V1ActionEvent(BaseModel):
     tool: V1ToolRef
     namespace: str
     prompt: Optional[V1Prompt] = None
-    approved: Optional[bool] = None
+    reviews: List[V1Review] = []
     flagged: bool = False
     model: Optional[str] = None
     agent_id: Optional[str] = None
@@ -76,7 +95,7 @@ class V1CreateActionEvent(BaseModel):
     namespace: str
     metadata: dict = {}
     prompt: Optional[V1Prompt] = None
-    approved: Optional[bool] = None
+    reviews: List[V1Review] = []
     flagged: bool = False
     model: Optional[str] = None
     agent_id: Optional[str] = None

@@ -2,21 +2,21 @@ import time
 from typing import Dict, Any, Optional, List
 import uuid
 import json
-from enum import Enum
 
-from mllm import Prompt, V1Prompt
+from mllm import Prompt
 from sqlalchemy import asc
 
 from .db.conn import WithDB
-from .db.models import ActionRecord, EpisodeRecord
+from .db.models import ActionRecord, EpisodeRecord, ReviewRecord
 from .server.models import (
     V1ActionEvent,
     V1ToolRef,
-    V1ActionSelection,
     V1Action,
     V1Episode,
     V1EnvState,
+    ReviewerType,
 )
+from .review import Review
 
 
 class ActionEvent(WithDB):
@@ -32,13 +32,14 @@ class ActionEvent(WithDB):
         end_state: Optional[V1EnvState] = None,
         namespace: str = "default",
         metadata: dict = {},
-        approved: Optional[bool] = None,
         flagged: bool = False,
         owner_id: Optional[str] = None,
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
+        reviews: Optional[List[Review]] = None,
+        id: Optional[str] = None,
     ) -> None:
-        self.id = str(uuid.uuid4())
+        self.id = id or str(uuid.uuid4())
         self.state = state
         self.prompt = prompt
         self.action = action
@@ -48,16 +49,28 @@ class ActionEvent(WithDB):
         self.namespace = namespace
         self.metadata = metadata
         self.created = time.time()
-        self.approved = approved
         self.flagged = flagged
         self.owner_id = owner_id
         self.model = model
         self.agent_id = agent_id
+        self.reviews = reviews or []
 
-    def approve(self) -> None:
-        self.approved = True
-        if self.prompt:
-            self.prompt.approved = True
+    def post_review(
+        self,
+        reviewer: str,
+        approved: bool,
+        reviewer_type: str = ReviewerType.HUMAN.value,
+        reason: Optional[str] = None,
+        parent_id: Optional[str] = None,
+    ) -> None:
+        review = Review(
+            reviewer=reviewer,
+            approved=approved,
+            reviewer_type=reviewer_type,
+            reason=reason,
+            parent_id=parent_id,
+        )
+        self.reviews.append(review)
         self.save()
 
     def to_v1(self) -> V1ActionEvent:
@@ -71,11 +84,11 @@ class ActionEvent(WithDB):
             tool=self.tool,
             namespace=self.namespace,
             created=self.created,
-            approved=self.approved,
             flagged=self.flagged,
             model=self.model,
             agent_id=self.agent_id,
             metadata=self.metadata,
+            reviews=[review.to_v1() for review in self.reviews] if self.reviews else [],
         )
 
     @classmethod
@@ -84,87 +97,109 @@ class ActionEvent(WithDB):
     ) -> "ActionEvent":
         event = cls.__new__(cls)
         event.id = v1.id
-        event.prompt = Prompt.from_v1(v1.prompt) if v1.prompt else None
         event.state = v1.state
         event.action = v1.action
+        event.tool = v1.tool
+        event.prompt = (
+            Prompt.from_v1(v1.prompt) if v1.prompt else None
+        )  # Replace Prompt with your actual class
         event.result = v1.result
         event.end_state = v1.end_state
-        event.tool = v1.tool
         event.namespace = v1.namespace
-        event.created = v1.created
-        event.approved = v1.approved
+        event.metadata = v1.metadata
         event.flagged = v1.flagged
         event.owner_id = owner_id
         event.model = v1.model
         event.agent_id = v1.agent_id
-        event.metadata = v1.metadata
+        event.reviews = (
+            [Review.from_v1(review_v1) for review_v1 in v1.reviews]
+            if v1.reviews
+            else []
+        )
+        event.created = v1.created
         return event
 
     def save(self) -> None:
         """Saves the instance to the database."""
         for db in self.get_db():
             record = self.to_record()
+            if self.prompt:
+                self.prompt.save()
             db.merge(record)
             db.commit()
 
+            # After committing the action, associate the reviews
+            if self.reviews:
+                for review in self.reviews:
+                    review.save()
+                # Refresh the record to get the latest state
+                record = (
+                    db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
+                )
+
+                if not record:
+                    raise ValueError(f"ActionRecord with id {self.id} not found")
+                # Associate the reviews with the action via the association table
+                record.reviews = [
+                    db.query(ReviewRecord).filter_by(id=review.id).first()
+                    for review in self.reviews
+                ]
+                db.commit()
+
     def to_record(self) -> ActionRecord:
         """Converts the instance to a database record."""
-        prompt_id = None
-        if self.prompt:
-            self.prompt.save()
-            prompt_id = self.prompt.id
+        prompt_id = self.prompt.id if self.prompt else None
         return ActionRecord(
             id=self.id,
             prompt_id=prompt_id,
-            state=json.dumps(self.state.model_dump()),
-            action=json.dumps(self.action.model_dump()),
+            state=self.state.model_dump_json(),  # Adjust serialization as needed
+            action=self.action.model_dump_json(),
             result=json.dumps(self.result),
-            end_state=(
-                json.dumps(self.end_state.model_dump()) if self.end_state else None
-            ),
-            tool=json.dumps(self.tool.model_dump()),
+            end_state=self.end_state.model_dump_json() if self.end_state else None,
+            tool=self.tool.model_dump_json(),
             namespace=self.namespace,
             metadata_=json.dumps(self.metadata),
-            approved=self.approved,
             flagged=self.flagged,
             created=self.created,
             owner_id=self.owner_id,
             model=self.model,
             agent_id=self.agent_id,
+            # reviews are associated via the relationship, not stored directly
         )
 
     @classmethod
     def from_record(cls, record: ActionRecord) -> "ActionEvent":
-        """Creates an instance from a database record using the __new__ method."""
         event = cls.__new__(cls)
+        # Load reviews associated with the action
+        reviews = [
+            Review.from_record(review_record) for review_record in record.reviews
+        ]
         event.id = record.id
-        event.prompt = Prompt.find(id=str(record.prompt_id))[0] if record.prompt_id else None  # type: ignore
-        event.state = V1EnvState.model_validate_json(str(record.state))
-        event.action = V1Action.model_validate_json(str(record.action))
-        event.result = json.loads(str(record.result))
-        event.end_state = (
-            V1EnvState.model_validate_json(str(record.end_state))
-            if record.end_state  # type: ignore
-            else None
-        )
-        event.tool = V1ToolRef.model_validate_json(str(record.tool))
+        event.state = json.loads(record.state)  # type: ignore
+        event.action = json.loads(record.action)  # type: ignore
+        event.tool = json.loads(record.tool)  # type: ignore
+        event.prompt = (
+            Prompt.find(id=record.prompt_id)[0] if record.prompt_id else None  # type: ignore
+        )  # Replace Prompt with your actual class
+        event.result = json.loads(record.result)  # type: ignore
+        event.end_state = json.loads(record.end_state) if record.end_state else None  # type: ignore
         event.namespace = record.namespace
-        event.metadata = json.loads(str(record.metadata_))
-        event.created = record.created
-        event.approved = record.approved
+        event.metadata = json.loads(record.metadata_)  # type: ignore
         event.flagged = record.flagged
         event.owner_id = record.owner_id
         event.model = record.model
         event.agent_id = record.agent_id
+        event.reviews = reviews
+        event.created = record.created
         return event
 
     @classmethod
-    def find(cls, tool: Optional[V1ToolRef] = None, **kwargs) -> List["ActionEvent"]:
+    def find(cls, tool: Optional[Any] = None, **kwargs) -> List["ActionEvent"]:
         for db in cls.get_db():
             records = (
                 db.query(ActionRecord)
                 .filter_by(**kwargs)
-                .order_by(asc(ActionRecord.created))
+                .order_by(ActionRecord.created.asc())
                 .all()
             )
             out = [cls.from_record(record) for record in records]
@@ -172,21 +207,23 @@ class ActionEvent(WithDB):
                 out = [
                     action
                     for action in out
-                    if action.tool.model_dump() == tool.model_dump()
+                    if action.tool == tool  # Adjust comparison as needed
                 ]
             return out
-
-        raise ValueError("no session")
+        raise ValueError("No database session available")
 
     def delete(self) -> None:
         """Deletes the instance from the database."""
         for db in self.get_db():
             record = db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
             if record:
+                # Optionally delete associated reviews
+                for review in self.reviews:
+                    review.delete()
                 db.delete(record)
                 db.commit()
             else:
-                raise ValueError("Record not found")
+                raise ValueError("ActionEvent not found")
 
 
 class Episode(WithDB):
@@ -349,68 +386,102 @@ class Episode(WithDB):
             else:
                 raise ValueError("Episode record not found")
 
-    def fail_one(self, event_id: str) -> None:
+    def fail_one(
+        self,
+        event_id: str,
+        reviewer: str,
+        reviewer_type: str = ReviewerType.HUMAN.value,
+        reason: Optional[str] = None,
+    ) -> None:
         """Fail the given event."""
         for event in self.actions:
             if event.id == event_id:
-                event.approved = False
-                if event.prompt:
-                    event.prompt.approved = False
-                event.save()
+                event.post_review(
+                    reviewer=reviewer,
+                    reviewer_type=reviewer_type,
+                    reason=reason,
+                    approved=False,
+                )
                 break
 
-    def approve_one(self, event_id: str) -> None:
+    def approve_one(
+        self,
+        event_id: str,
+        reviewer: str,
+        reviewer_type: str = ReviewerType.HUMAN.value,
+        reason: Optional[str] = None,
+    ) -> None:
         """Approve the given event."""
         for event in self.actions:
             if event.id == event_id:
-                event.approved = True
-                if event.prompt:
-                    event.prompt.approved = True
-                event.save()
+                event.post_review(
+                    reviewer=reviewer,
+                    reviewer_type=reviewer_type,
+                    reason=reason,
+                    approved=True,
+                )
                 break
 
-    def approve_all(self) -> None:
+    def approve_all(
+        self,
+        reviewer: str,
+        reviewer_type: str = ReviewerType.HUMAN.value,
+    ) -> None:
         """Approve all actions in the episode."""
         for event in self.actions:
-            event.approved = True
-            if event.prompt:
-                event.prompt.approved = True
-            event.save()
+            event.post_review(
+                reviewer=reviewer,
+                reviewer_type=reviewer_type,
+                approved=True,
+            )
         self.save()
 
-    def fail_all(self) -> None:
+    def fail_all(
+        self,
+        reviewer: str,
+        reviewer_type: str = ReviewerType.HUMAN.value,
+    ) -> None:
         """Fail all actions in the episode."""
         for event in self.actions:
-            event.approved = False
-            if event.prompt:
-                event.prompt.approved = False
-            event.save()
+            event.post_review(
+                reviewer=reviewer,
+                reviewer_type=reviewer_type,
+                approved=False,
+            )
         self.save()
 
-    def approve_prior(self, event_id: str) -> None:
+    def approve_prior(
+        self,
+        event_id: str,
+        reviewer: str,
+        reviewer_type: str = ReviewerType.HUMAN.value,
+    ) -> None:
         """Approve the given event and all prior actions."""
-        self.approve_one(event_id)
+        self.approve_one(event_id, reviewer, reviewer_type)
         for i in range(len(self.actions) - 1):
             if self.actions[i].id == event_id:
                 for j in range(i + 1, len(self.actions)):
-                    self.actions[j].approved = True
-                    if self.actions[j].prompt:
-                        self.actions[j].prompt.approved = True  # type: ignore
-                    self.actions[j].save()
+                    self.actions[j].post_review(
+                        reviewer=reviewer,
+                        reviewer_type=reviewer_type,
+                        approved=True,
+                    )
         self.save()
 
-    def fail_prior(self, event_id: str) -> None:
+    def fail_prior(
+        self,
+        event_id: str,
+        reviewer: str,
+        reviewer_type: str = ReviewerType.HUMAN.value,
+    ) -> None:
         """Approve the given event and all prior actions."""
-        self.approve_one(event_id)
+        self.approve_one(event_id, reviewer, reviewer_type)
         for i in range(len(self.actions) - 1):
             if self.actions[i].id == event_id:
                 for j in range(i + 1, len(self.actions)):
-                    self.actions[j].approved = False
-                    if self.actions[j].prompt:
-                        self.actions[j].prompt.approved = False  # type: ignore
-                    self.actions[j].save()
+                    self.actions[j].post_review(
+                        reviewer=reviewer,
+                        reviewer_type=reviewer_type,
+                        approved=True,
+                    )
         self.save()
-
-    def approved_actions(self) -> List[ActionEvent]:
-        """Returns a list of approved actions."""
-        return [action for action in self.actions if action.approved]

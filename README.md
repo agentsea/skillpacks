@@ -45,7 +45,7 @@ Take an action
 
 ```python
 from mllm import Router, RoleThread
-from skillpacks import V1Action
+from skillpacks import V1Action, V1EnvState
 from agentdesk import Desktop
 
 router = Router.from_env()
@@ -69,6 +69,7 @@ Record the action in the episode
 
 ```python
 event = episode.record(
+    state=V1EnvState(),
     prompt=response.prompt,
     action=v1action,
     tool=desktop.ref(),

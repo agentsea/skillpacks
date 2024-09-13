@@ -1,11 +1,32 @@
 import time
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, Text, Boolean, Float
+from sqlalchemy import Column, String, ForeignKey, Text, Boolean, Float, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import JSONB  # If using PostgreSQL
 
 Base = declarative_base()
+
+
+action_reviews = Table(
+    "action_reviews",
+    Base.metadata,
+    Column("action_id", String, ForeignKey("actions.id")),
+    Column("review_id", String, ForeignKey("reviews.id")),
+)
+
+
+# Database Models
+class ReviewRecord(Base):
+    __tablename__ = "reviews"
+
+    id = Column(String, primary_key=True)
+    reviewer = Column(String, nullable=False)
+    approved = Column(Boolean, nullable=False)
+    reviewer_type = Column(String, default="human")
+    reason = Column(Text, nullable=True)
+    created = Column(Float, default=time.time)
+    updated = Column(Float, nullable=True)
+    parent_id = Column(String, ForeignKey("reviews.id"), nullable=True)
 
 
 class ActionRecord(Base):
@@ -21,7 +42,7 @@ class ActionRecord(Base):
     end_state = Column(Text, nullable=True)
     tool = Column(Text)
     metadata_ = Column(Text, default=dict)
-    approved = Column(Boolean, nullable=True)
+
     flagged = Column(Boolean, default=False)
     model = Column(String, default=None)
     agent_id = Column(String, default=None)
@@ -29,6 +50,12 @@ class ActionRecord(Base):
 
     episode_id = Column(String, ForeignKey("episodes.id"), nullable=True)
     episode = relationship("EpisodeRecord", back_populates="actions")
+
+    reviews = relationship(
+        "ReviewRecord",
+        secondary=action_reviews,
+        lazy="dynamic",  # or 'select', depending on your preference
+    )
 
 
 class EpisodeRecord(Base):
