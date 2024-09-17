@@ -18,10 +18,12 @@ class V1Review(BaseModel):
     reviewer: str
     approved: bool
     reviewer_type: str = ReviewerType.HUMAN.value
+    reason: Optional[str] = None
+    resource_type: str
+    resource_id: str
+    parent_id: Optional[str] = None
     created: float
     updated: Optional[float] = None
-    reason: Optional[str] = None
-    parent_id: Optional[str] = None
 
 
 class V1Action(BaseModel):

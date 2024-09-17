@@ -3,7 +3,6 @@ Configuration for threadmem
 """
 
 import os
-import time
 
 AGENTSEA_HOME = os.path.expanduser(os.environ.get("AGENTSEA_HOME", "~/.agentsea"))
 AGENTSEA_DB_DIR = os.path.expanduser(
@@ -18,4 +17,4 @@ AGENTSEA_PROC_DIR = os.path.expanduser(
 DB_TEST = os.environ.get("AGENTSEA_DB_TEST", "false") == "true"
 DB_NAME = os.environ.get("SKILLS_DB_NAME", "skills.db")
 if DB_TEST:
-    DB_NAME = f"skills_test_{int(time.time())}.db"
+    DB_NAME = "skills_test.db"

@@ -14,6 +14,8 @@ class Review(WithDB):
         self,
         reviewer: str,
         approved: bool,
+        resource_type: str,
+        resource_id: str,
         reviewer_type: str = ReviewerType.HUMAN.value,
         reason: Optional[str] = None,
         parent_id: Optional[str] = None,
@@ -26,6 +28,8 @@ class Review(WithDB):
         self.reviewer_type = reviewer_type
         self.reason = reason
         self.parent_id = parent_id
+        self.resource_type = resource_type
+        self.resource_id = resource_id
         self.created = created or time.time()
         self.updated = updated
 
@@ -37,6 +41,8 @@ class Review(WithDB):
             reviewer_type=self.reviewer_type,
             reason=self.reason,
             parent_id=self.parent_id,
+            resource_type=self.resource_type,
+            resource_id=self.resource_id,
             created=self.created,
             updated=self.updated,
         )
@@ -50,6 +56,8 @@ class Review(WithDB):
         review.reviewer_type = v1.reviewer_type
         review.reason = v1.reason
         review.parent_id = v1.parent_id
+        review.resource_type = v1.resource_type
+        review.resource_id = v1.resource_id
         review.created = v1.created
         review.updated = v1.updated
         return review
@@ -79,6 +87,8 @@ class Review(WithDB):
             reviewer=self.reviewer,
             reviewer_type=self.reviewer_type,
             reason=self.reason,
+            resource_type=self.resource_type,
+            resource_id=self.resource_id,
             parent_id=self.parent_id,
             created=self.created,
             updated=self.updated,
@@ -94,6 +104,8 @@ class Review(WithDB):
         review.approved = record.approved
         review.reason = record.reason
         review.parent_id = record.parent_id
+        review.resource_type = record.resource_type
+        review.resource_id = record.resource_id
         review.created = record.created
         review.updated = record.updated
         return review
