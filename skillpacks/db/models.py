@@ -24,6 +24,8 @@ class ReviewRecord(Base):
     approved = Column(Boolean, nullable=False)
     reviewer_type = Column(String, default="human")
     reason = Column(Text, nullable=True)
+    resource_type = Column(String, nullable=True)
+    resource_id = Column(String, nullable=True)
     created = Column(Float, default=time.time)
     updated = Column(Float, nullable=True)
     parent_id = Column(String, ForeignKey("reviews.id"), nullable=True)

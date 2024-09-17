@@ -68,6 +68,8 @@ class ActionEvent(WithDB):
             reviewer_type=reviewer_type,
             reason=reason,
             parent_id=parent_id,
+            resource_type="action",
+            resource_id=self.id,
         )
         self.reviews.append(review)
         self.save()
@@ -177,6 +179,7 @@ class ActionEvent(WithDB):
         event.state = json.loads(record.state)  # type: ignore
         event.action = json.loads(record.action)  # type: ignore
         event.tool = json.loads(record.tool)  # type: ignore
+
         event.prompt = (
             Prompt.find(id=record.prompt_id)[0] if record.prompt_id else None  # type: ignore
         )  # Replace Prompt with your actual class
