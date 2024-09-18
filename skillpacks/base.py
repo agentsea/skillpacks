@@ -149,7 +149,10 @@ class ActionEvent(WithDB):
 
     def to_record(self) -> ActionRecord:
         """Converts the instance to a database record."""
-        prompt_id = self.prompt.id if self.prompt else None
+        prompt_id = None
+        if self.prompt:
+            prompt_id = self.prompt.id
+
         return ActionRecord(
             id=self.id,
             prompt_id=prompt_id,
@@ -315,6 +318,8 @@ class Episode(WithDB):
     def save(self) -> None:
         """Saves the instance to the database."""
         for db in self.get_db():
+            for action in self.actions:
+                action.save()
             record = self.to_record()
             db.merge(record)
             db.commit()
