@@ -179,15 +179,19 @@ class ActionEvent(WithDB):
             Review.from_record(review_record) for review_record in record.reviews
         ]
         event.id = record.id
-        event.state = json.loads(record.state)  # type: ignore
-        event.action = json.loads(record.action)  # type: ignore
-        event.tool = json.loads(record.tool)  # type: ignore
+        event.state = V1EnvState.model_validate_json(record.state)  # type: ignore
+        event.action = V1Action.model_validate_json(record.action)  # type: ignore
+        event.tool = V1ToolRef.model_validate_json(record.tool)  # type: ignore
 
         event.prompt = (
             Prompt.find(id=record.prompt_id)[0] if record.prompt_id else None  # type: ignore
         )  # Replace Prompt with your actual class
         event.result = json.loads(record.result)  # type: ignore
-        event.end_state = json.loads(record.end_state) if record.end_state else None  # type: ignore
+        event.end_state = (
+            V1EnvState.model_validate_json(record.end_state)  # type: ignore
+            if record.end_state  # type: ignore
+            else None
+        )  # type: ignore
         event.namespace = record.namespace
         event.metadata = json.loads(record.metadata_)  # type: ignore
         event.flagged = record.flagged
