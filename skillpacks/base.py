@@ -17,6 +17,7 @@ from .server.models import (
     ReviewerType,
 )
 from .review import Review
+from .img import convert_images
 
 
 class ActionEvent(WithDB):
@@ -152,6 +153,13 @@ class ActionEvent(WithDB):
         prompt_id = None
         if self.prompt:
             prompt_id = self.prompt.id
+
+        if self.state.image:
+            new_imgs = convert_images([self.state.image])  # type: ignore
+            self.state.image = new_imgs[0]
+        if self.end_state and self.end_state.image:
+            new_imgs = convert_images([self.end_state.image])  # type: ignore
+            self.end_state.image = new_imgs[0]
 
         return ActionRecord(
             id=self.id,
