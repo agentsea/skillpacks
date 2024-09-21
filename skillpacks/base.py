@@ -154,12 +154,12 @@ class ActionEvent(WithDB):
         if self.prompt:
             prompt_id = self.prompt.id
 
-        if self.state.image:
-            new_imgs = convert_images([self.state.image])  # type: ignore
-            self.state.image = new_imgs[0]
-        if self.end_state and self.end_state.image:
-            new_imgs = convert_images([self.end_state.image])  # type: ignore
-            self.end_state.image = new_imgs[0]
+        if self.state.images:
+            new_imgs = convert_images(self.state.images)  # type: ignore
+            self.state.images = new_imgs
+        if self.end_state and self.end_state.images:
+            new_imgs = convert_images(self.end_state.images)  # type: ignore
+            self.end_state.images = new_imgs
 
         return ActionRecord(
             id=self.id,

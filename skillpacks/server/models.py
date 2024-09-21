@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from enum import Enum
 
 from mllm import V1Prompt
@@ -59,7 +59,9 @@ class V1ActionSelection(BaseModel):
 class V1EnvState(BaseModel):
     """The state of the environment"""
 
-    image: Optional[str] = None
+    images: Optional[List[str]] = None
+    coordinates: Optional[Tuple[int, int]] = None
+    video: Optional[str] = None
 
 
 class V1ActionEvent(BaseModel):
