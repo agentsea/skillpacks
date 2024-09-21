@@ -2040,13 +2040,13 @@ files = [
 
 [[package]]
 name = "mllm"
-version = "0.1.38"
+version = "0.1.40"
 description = "Multimodal Large Language Models"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "mllm-0.1.38-py3-none-any.whl", hash = "sha256:d051c974d5763a543fb986ba2483e394e26cad9498291702e71804a7d8301f3f"},
-    {file = "mllm-0.1.38.tar.gz", hash = "sha256:ea4b1341ea7cfa409549c00a70edaa2379969318d1ee66890594332193feee90"},
+    {file = "mllm-0.1.40-py3-none-any.whl", hash = "sha256:72ca899e95488a88800ea12950170ce58ff3c527cb190b304624f9f02d445518"},
+    {file = "mllm-0.1.40.tar.gz", hash = "sha256:3eef3dff7aa563cbe4456a41dd67186478b5931ff2274f1aa7f00df9cb8cfdec"},
 ]
 
 [package.dependencies]
@@ -4363,4 +4363,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "38c310a5437398489aae1d5d7c03f05bddf164843435fb1e9c701a9504b36cee"
+content-hash = "465288825b98e14903d2e84ce5fbe855586dfbd04e62da133363310bd6f07be4"
