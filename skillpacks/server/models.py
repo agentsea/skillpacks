@@ -62,6 +62,9 @@ class V1EnvState(BaseModel):
     images: Optional[List[str]] = None
     coordinates: Optional[Tuple[int, int]] = None
     video: Optional[str] = None
+    text: Optional[str] = None
+    html: Optional[str] = None
+    json: Optional[Dict[str, Any]] = None
 
 
 class V1ActionEvent(BaseModel):
@@ -111,6 +114,8 @@ class V1Episode(BaseModel):
     actions: List[V1ActionEvent] = []
     tags: List[str] = []
     labels: Dict[str, Any] = {}
+    device: Optional[str] = None
+    device_type: Optional[str] = None
 
 
 class V1Episodes(BaseModel):

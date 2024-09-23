@@ -69,9 +69,8 @@ class EpisodeRecord(Base):
     labels = Column(Text, default=list)
     created = Column(Float, default=time.time)
     updated = Column(Float, default=time.time)
-    actions = relationship(
-        "ActionRecord", order_by=ActionRecord.id, back_populates="episode"
-    )
+    device = Column(String, nullable=True)  # Added device column
+    device_type = Column(String, nullable=True)  # Added device_type column
 
     actions = relationship(
         "ActionRecord",

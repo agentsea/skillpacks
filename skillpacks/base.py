@@ -231,6 +231,7 @@ class ActionEvent(WithDB):
 
     def delete(self) -> None:
         """Deletes the instance from the database."""
+        print("\n\n!!!DELETING ACTION EVENT: ", self.id)
         for db in self.get_db():
             record = db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
             if record:
@@ -253,6 +254,8 @@ class Episode(WithDB):
         tags: List[str] = [],
         labels: Dict[str, Any] = {},
         owner_id: Optional[str] = None,
+        device: Optional[str] = None,
+        device_type: Optional[str] = None,
     ) -> None:
         self.id = shortuuid.uuid()
         self.actions = actions
@@ -262,6 +265,8 @@ class Episode(WithDB):
         self.tags = tags
         self.labels = labels
         self.owner_id = owner_id
+        self.device = device
+        self.device_type = device_type
 
     def to_v1(self) -> V1Episode:
         """Converts the instance to a V1Episode."""
@@ -281,6 +286,8 @@ class Episode(WithDB):
         episode.actions = [ActionEvent.from_v1(action) for action in v1.actions]
         episode.tags = v1.tags
         episode.labels = v1.labels
+        episode.device = v1.device
+        episode.device_type = v1.device_type
         episode.created = time.time()
         episode.updated = time.time()
         episode.owner_id = owner_id
@@ -345,6 +352,8 @@ class Episode(WithDB):
             created=self.created,
             updated=self.updated,
             owner_id=self.owner_id,
+            device=self.device,
+            device_type=self.device_type,
         )
         # Convert all actions to records and associate with this episode record
         episode_record.actions = [action.to_record() for action in self.actions]
@@ -361,6 +370,8 @@ class Episode(WithDB):
         episode.created = record.created
         episode.updated = record.updated
         episode.owner_id = record.owner_id
+        episode.device = record.device  # Retrieve device
+        episode.device_type = record.device_type  # Retrieve device_type
         return episode
 
     @classmethod
@@ -387,6 +398,7 @@ class Episode(WithDB):
 
     def delete(self) -> None:
         """Deletes the episode and all associated actions from the database."""
+        print("\n\n!!!DELETING EPISODE: " + self.id)
         for db in self.get_db():
             # Delete all associated action records first
             action_records = (
