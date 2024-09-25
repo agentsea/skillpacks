@@ -231,7 +231,6 @@ class ActionEvent(WithDB):
 
     def delete(self) -> None:
         """Deletes the instance from the database."""
-        print("\n\n!!!DELETING ACTION EVENT: ", self.id)
         for db in self.get_db():
             record = db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
             if record:
@@ -398,7 +397,6 @@ class Episode(WithDB):
 
     def delete(self) -> None:
         """Deletes the episode and all associated actions from the database."""
-        print("\n\n!!!DELETING EPISODE: " + self.id)
         for db in self.get_db():
             # Delete all associated action records first
             action_records = (
