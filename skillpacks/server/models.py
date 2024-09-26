@@ -21,7 +21,7 @@ class V1Review(BaseModel):
     reason: Optional[str] = None
     resource_type: str
     resource_id: str
-    with_resources: Optional[List[str]] = Field(..., description="A list of resource IDs of resource_type (EX. Action, Task) that a resource was mass reviewed with.")
+    with_resources: Optional[List[str]] = Field(..., description="A list of resource IDs of resource_type (EX. Action, Task) that the resource_id was mass reviewed with.")
     parent_id: Optional[str] = None
     correction: Optional[str] = None
     correction_schema: Optional[Dict[str, Any]] = None
