@@ -26,10 +26,12 @@ class ReviewRecord(Base):
     reason = Column(Text, nullable=True)
     resource_type = Column(String, nullable=True)
     resource_id = Column(String, nullable=True)
+    with_resources = Column(String, nullable=True)
+    correction = Column(String, nullable=True)
+    correction_schema = Column(String, nullable=True)
     created = Column(Float, default=time.time)
     updated = Column(Float, nullable=True)
     parent_id = Column(String, ForeignKey("reviews.id"), nullable=True)
-
 
 class ActionRecord(Base):
     __tablename__ = "actions"
