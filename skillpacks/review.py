@@ -16,11 +16,12 @@ class Review(WithDB):
         approved: bool,
         resource_type: str,
         resource_id: str,
+        with_resources: Optional[List[str]],
         reviewer_type: str = ReviewerType.HUMAN.value,
         reason: Optional[str] = None,
         parent_id: Optional[str] = None,
         correction: Optional[str] = None,
-        correction_schema: Optional[Dict[str, Any]] = None,    
+        correction_schema: Optional[Type[BaseModel]] = None,   
         created: Optional[float] = None,
         updated: Optional[float] = None,
     ) -> None:
@@ -32,8 +33,9 @@ class Review(WithDB):
         self.parent_id = parent_id
         self.resource_type = resource_type
         self.resource_id = resource_id
+        self.with_resources = with_resources
         self.correction = correction
-        self.correction_schema = correction_schema
+        self.correction_schema = correction_schema.model_json_schema() if correction_schema else None
         self.created = created or time.time()
         self.updated = updated
 
@@ -47,6 +49,7 @@ class Review(WithDB):
             parent_id=self.parent_id,
             resource_type=self.resource_type,
             resource_id=self.resource_id,
+            with_resources=self.with_resources,
             correction=self.correction,
             correction_schema=self.correction_schema,
             created=self.created,
@@ -64,8 +67,9 @@ class Review(WithDB):
         review.parent_id = v1.parent_id
         review.resource_type = v1.resource_type
         review.resource_id = v1.resource_id
-        correction=v1.correction
-        correction_schema=v1.correction_schema
+        review.with_resources = v1.with_resources
+        review.correction=v1.correction
+        review.correction_schema=v1.correction_schema
         review.created = v1.created
         review.updated = v1.updated
         return review
@@ -97,6 +101,7 @@ class Review(WithDB):
             reason=self.reason,
             resource_type=self.resource_type,
             resource_id=self.resource_id,
+            with_resources=self.with_resources,
             parent_id=self.parent_id,
             correction=self.correction,
             correction_schema=self.correction_schema,
@@ -116,8 +121,9 @@ class Review(WithDB):
         review.parent_id = record.parent_id
         review.resource_type = record.resource_type
         review.resource_id = record.resource_id
-        review.correction=correction
-        review.correction_schema=correction_schema
+        review.with_resources = record.with_resources
+        review.correction = correction
+        review.correction_schema = correction_schema
         review.created = record.created
         review.updated = record.updated
         return review
