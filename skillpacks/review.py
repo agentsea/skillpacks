@@ -19,6 +19,8 @@ class Review(WithDB):
         reviewer_type: str = ReviewerType.HUMAN.value,
         reason: Optional[str] = None,
         parent_id: Optional[str] = None,
+        correction: Optional[str] = None,
+        correction_schema: Optional[Dict[str, Any]] = None,    
         created: Optional[float] = None,
         updated: Optional[float] = None,
     ) -> None:
@@ -30,6 +32,8 @@ class Review(WithDB):
         self.parent_id = parent_id
         self.resource_type = resource_type
         self.resource_id = resource_id
+        self.correction = correction
+        self.correction_schema = correction_schema
         self.created = created or time.time()
         self.updated = updated
 
@@ -43,6 +47,8 @@ class Review(WithDB):
             parent_id=self.parent_id,
             resource_type=self.resource_type,
             resource_id=self.resource_id,
+            correction=self.correction,
+            correction_schema=self.correction_schema,
             created=self.created,
             updated=self.updated,
         )
@@ -58,6 +64,8 @@ class Review(WithDB):
         review.parent_id = v1.parent_id
         review.resource_type = v1.resource_type
         review.resource_id = v1.resource_id
+        correction=v1.correction
+        correction_schema=v1.correction_schema
         review.created = v1.created
         review.updated = v1.updated
         return review
@@ -90,6 +98,8 @@ class Review(WithDB):
             resource_type=self.resource_type,
             resource_id=self.resource_id,
             parent_id=self.parent_id,
+            correction=self.correction,
+            correction_schema=self.correction_schema,
             created=self.created,
             updated=self.updated,
         )
@@ -106,6 +116,8 @@ class Review(WithDB):
         review.parent_id = record.parent_id
         review.resource_type = record.resource_type
         review.resource_id = record.resource_id
+        review.correction=correction
+        review.correction_schema=correction_schema
         review.created = record.created
         review.updated = record.updated
         return review

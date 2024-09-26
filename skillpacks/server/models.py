@@ -22,6 +22,8 @@ class V1Review(BaseModel):
     resource_type: str
     resource_id: str
     parent_id: Optional[str] = None
+    correction: Optional[str] = None
+    correction_schema: Optional[Dict[str, Any]] = None
     created: float
     updated: Optional[float] = None
 
