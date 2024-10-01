@@ -33,6 +33,7 @@ class ReviewRecord(Base):
     updated = Column(Float, nullable=True)
     parent_id = Column(String, ForeignKey("reviews.id"), nullable=True)
 
+
 class ActionRecord(Base):
     __tablename__ = "actions"
 
