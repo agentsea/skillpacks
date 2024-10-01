@@ -60,7 +60,7 @@ def parse_image_data(image_data_str: str):
     )
     match = data_url_pattern.match(image_data_str)
     if not match:
-        raise ValueError("Invalid image data format")
+        raise ValueError(f"Invalid image data format: {image_data_str}")
     mime_type = match.group("mime_type")
     base64_data = match.group("base64_data")
     return mime_type, base64_data
