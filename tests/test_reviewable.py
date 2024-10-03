@@ -1,8 +1,5 @@
-# from mllm import Prompt, RoleThread, RoleMessage
-# from toolfuse.models import V1ToolRef
-
 import pytest
-from skillpacks.server.models import V1BoundingBox, V1BoundingBoxReviewable
+from skillpacks.server.models import V1BoundingBox
 from skillpacks.db.models import ReviewableRecord
 from skillpacks import Reviewable, Review, BoundingBoxReviewable
 

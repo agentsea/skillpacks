@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from skillpacks.db.models import ReviewRecord, ReviewableRecord
 from skillpacks.db.conn import WithDB
-from skillpacks.server.models import ReviewerType, V1Review, V1BoundingBox, V1BoundingBoxReviewable, V1Reviewable
+from skillpacks.server.models import ReviewerType, V1BoundingBox, V1BoundingBoxReviewable, V1Reviewable
 from .review import Review
 
 ReviewableModel = TypeVar("ReviewableModel", bound="BaseModel") # this means the model of the reivewable needs to be valid BaseModel AKA V1BoundingBoxReviewable
@@ -28,20 +28,11 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
         updated: Optional[float] = None,
     ) -> None:
         self.id = shortuuid.uuid()
-        # self.result: Optional[FlagResult] = None
         self.created = created or time.time()
         self.updated = updated
         self.reviews = reviews or []
         self.resource_type = resource_type
         self.resource_id = resource_id
-
-    # @property
-    # def reviews(self) -> List[Review]:
-    #     return self.reviews
-
-    # @reviews.setter
-    # def reviews(self, value: List[Review]):
-    #     self.reviews = value
 
     @classmethod
     @abstractmethod
