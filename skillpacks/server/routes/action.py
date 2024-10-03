@@ -12,6 +12,7 @@ from skillpacks.server.models import (
 from skillpacks.base import ActionEvent
 from skillpacks.auth.transport import get_current_user
 from skillpacks.review import Review
+from skillpacks.state import EnvState
 
 
 router = APIRouter()
@@ -23,7 +24,7 @@ async def create_action_event(
     data: V1CreateActionEvent,
 ):
     event = ActionEvent(
-        state=data.state,
+        state=EnvState.from_v1(data.state),
         action=data.action,
         tool=data.tool,
         result=data.result,
