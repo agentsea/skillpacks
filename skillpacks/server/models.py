@@ -20,7 +20,7 @@ class V1Review(BaseModel):
     reviewer_type: str = ReviewerType.HUMAN.value
     reason: Optional[str] = None
     resource_type: str
-    resource_id: str
+    resource_id: Optional[str] = None
     with_resources: Optional[List[str]] = Field(
         default=None,
         description="A list of resource IDs of resource_type (EX. Action, Task) that the resource_id was mass reviewed with.",
@@ -70,8 +70,6 @@ class V1EnvState(BaseModel):
     video: Optional[str] = None
     text: Optional[str] = None
     html: Optional[str] = None
-    json: Optional[Dict[str, Any]] = None
-
 
 class V1ActionEvent(BaseModel):
     """An action that has occurred"""
@@ -138,3 +136,27 @@ class V1UserProfile(BaseModel):
     created: Optional[int] = None
     updated: Optional[int] = None
     token: Optional[str] = None
+
+class V1Reviewable(BaseModel):
+    type: str
+    id: str
+    reviewable: Dict[str, Any]
+    reviews: List[V1Review] = []
+    resource_type: str
+    resource_id: str
+    created: float
+
+class V1BoundingBox(BaseModel):
+    """A bounding box"""
+
+    x0: int
+    x1: int
+    y0: int
+    y1: int
+
+class V1BoundingBoxReviewable(BaseModel):
+    """A bounding box"""
+
+    img: str
+    target: str
+    bbox: V1BoundingBox

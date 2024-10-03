@@ -4,6 +4,11 @@ from .base import (
     Review,
 )
 
+from .reviewable import (
+    Reviewable,
+    BoundingBoxReviewable,
+)
+
 from skillpacks.server.models import (
     V1ActionSelection,
     V1Episode,
@@ -15,4 +20,7 @@ from skillpacks.server.models import (
     V1ActionEvent,
     V1Episode,
     V1EnvState,
+    V1Reviewable,
+    V1BoundingBox,
+    V1BoundingBoxReviewable,
 )
