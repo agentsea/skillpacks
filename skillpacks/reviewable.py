@@ -5,6 +5,7 @@ import time
 import json
 
 from pydantic import BaseModel
+from PIL import Image
 
 from skillpacks.db.models import ReviewRecord, ReviewableRecord
 from skillpacks.db.conn import WithDB
@@ -15,6 +16,7 @@ from skillpacks.server.models import (
     V1Reviewable,
 )
 from .review import Review
+from .img import convert_images
 
 ReviewableModel = TypeVar(
     "ReviewableModel", bound="BaseModel"
@@ -222,14 +224,14 @@ class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable]):
 
     def __init__(
         self,
-        img: str,
+        img: str | Image.Image,
         target: str,
         bbox: V1BoundingBox,
         metadata: Optional[Dict[str, str]] = None,
         **kwargs,  # Catch any additional keyword arguments for parent class
     ):
         super().__init__(**kwargs)
-        self.img = img
+        self.img = convert_images([img])[0]
         self.target = target
         self.bbox = bbox
         self.metadata = metadata
