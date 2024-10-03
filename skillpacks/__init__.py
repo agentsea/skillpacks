@@ -4,6 +4,8 @@ from .base import (
     Review,
 )
 
+from .state import EnvState
+
 from .reviewable import (
     Reviewable,
     BoundingBoxReviewable,
