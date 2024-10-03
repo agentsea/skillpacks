@@ -69,7 +69,7 @@ class V1EnvState(BaseModel):
     coordinates: Optional[Tuple[int, int]] = None
     video: Optional[str] = None
     text: Optional[str] = None
-    html: Optional[str] = None
+
 
 class V1ActionEvent(BaseModel):
     """An action that has occurred"""
@@ -137,6 +137,7 @@ class V1UserProfile(BaseModel):
     updated: Optional[int] = None
     token: Optional[str] = None
 
+
 class V1Reviewable(BaseModel):
     type: str
     id: str
@@ -146,6 +147,7 @@ class V1Reviewable(BaseModel):
     resource_id: str
     created: float
 
+
 class V1BoundingBox(BaseModel):
     """A bounding box"""
 
@@ -153,6 +155,7 @@ class V1BoundingBox(BaseModel):
     x1: int
     y0: int
     y1: int
+
 
 class V1BoundingBoxReviewable(BaseModel):
     """A bounding box"""

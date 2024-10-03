@@ -9,6 +9,7 @@ from skillpacks.db.models import ReviewRecord
 from skillpacks.db.conn import WithDB
 from skillpacks.server.models import ReviewerType, V1Review
 
+
 class Review(WithDB):
     """A review of an agent action or task"""
 
@@ -108,7 +109,9 @@ class Review(WithDB):
             with_resources=json.dumps(self.with_resources),
             parent_id=self.parent_id,
             correction=self.correction,
-            correction_schema=json.dumps(self.correction_schema) if self.correction_schema else None,
+            correction_schema=json.dumps(self.correction_schema)
+            if self.correction_schema
+            else None,
             created=self.created,
             updated=self.updated,
         )
@@ -125,7 +128,9 @@ class Review(WithDB):
         review.parent_id = record.parent_id
         review.resource_type = record.resource_type
         review.resource_id = record.resource_id
-        review.with_resources = json.loads(record.with_resources) if record.with_resources else []
+        review.with_resources = (
+            json.loads(record.with_resources) if record.with_resources else []  # type: ignore
+        )
         review.correction = record.correction
         review.correction_schema = record.correction_schema
         review.created = record.created

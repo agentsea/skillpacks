@@ -1,5 +1,5 @@
 from mllm import Prompt, RoleThread, RoleMessage
-from skillpacks import Episode, ActionEvent, V1Action, V1EnvState
+from skillpacks import Episode, ActionEvent, V1Action, EnvState
 from toolfuse.models import V1ToolRef
 
 
@@ -17,7 +17,7 @@ def test_all():
 
     episode = Episode()
     event1 = episode.record(
-        V1EnvState(images=["https://my.img"]),
+        EnvState(images=["https://my.img"]),
         V1Action(name="open_browser", parameters={"app": "chrome"}),
         V1ToolRef(module="agentdesk", type="Desktop", version="0.1.2"),
         prompt=prompt1.id,
@@ -25,7 +25,7 @@ def test_all():
 
     prompt2 = Prompt(thread, response)
     event2 = episode.record(
-        V1EnvState(images=["https://my.img"]),
+        EnvState(images=["https://my.img"]),
         V1Action(name="open_browser", parameters={"app": "firefox"}),
         V1ToolRef(module="agentdesk", type="Desktop", version="0.1.3"),
         prompt=prompt2.id,

@@ -13,11 +13,12 @@ from .server.models import (
     V1ToolRef,
     V1Action,
     V1Episode,
-    V1EnvState,
     ReviewerType,
+    V1EnvState,
 )
 from .review import Review
 from .img import convert_images
+from .state import EnvState
 
 
 class ActionEvent(WithDB):
@@ -25,12 +26,12 @@ class ActionEvent(WithDB):
 
     def __init__(
         self,
-        state: V1EnvState,
+        state: EnvState,
         action: V1Action,
         tool: V1ToolRef,
         prompt: Optional[Prompt] = None,
         result: Optional[Any] = None,
-        end_state: Optional[V1EnvState] = None,
+        end_state: Optional[EnvState] = None,
         namespace: str = "default",
         metadata: dict = {},
         flagged: bool = False,
@@ -78,11 +79,11 @@ class ActionEvent(WithDB):
     def to_v1(self) -> V1ActionEvent:
         return V1ActionEvent(
             id=self.id,
-            state=self.state,
+            state=self.state.to_v1(),
             prompt=self.prompt.to_v1() if self.prompt else None,
             action=self.action,
             result=self.result,
-            end_state=self.end_state,
+            end_state=self.end_state.to_v1() if self.end_state else None,
             tool=self.tool,
             namespace=self.namespace,
             created=self.created,
@@ -156,20 +157,15 @@ class ActionEvent(WithDB):
         if self.prompt:
             prompt_id = self.prompt.id
 
-        if self.state.images:
-            new_imgs = convert_images(self.state.images)  # type: ignore
-            self.state.images = new_imgs
-        if self.end_state and self.end_state.images:
-            new_imgs = convert_images(self.end_state.images)  # type: ignore
-            self.end_state.images = new_imgs
-
         return ActionRecord(
             id=self.id,
             prompt_id=prompt_id,
-            state=self.state.model_dump_json(),  # Adjust serialization as needed
+            state=self.state.to_v1().model_dump_json(),  # Adjust serialization as needed
             action=self.action.model_dump_json(),
             result=json.dumps(self.result),
-            end_state=self.end_state.model_dump_json() if self.end_state else None,
+            end_state=self.end_state.to_v1().model_dump_json()
+            if self.end_state
+            else None,
             tool=self.tool.model_dump_json(),
             namespace=self.namespace,
             metadata_=json.dumps(self.metadata),
@@ -189,7 +185,7 @@ class ActionEvent(WithDB):
             Review.from_record(review_record) for review_record in record.reviews
         ]
         event.id = record.id
-        event.state = V1EnvState.model_validate_json(record.state)  # type: ignore
+        event.state = EnvState.from_v1(V1EnvState.model_validate_json(record.state))  # type: ignore
         event.action = V1Action.model_validate_json(record.action)  # type: ignore
         event.tool = V1ToolRef.model_validate_json(record.tool)  # type: ignore
 
@@ -198,7 +194,7 @@ class ActionEvent(WithDB):
         )  # Replace Prompt with your actual class
         event.result = json.loads(record.result)  # type: ignore
         event.end_state = (
-            V1EnvState.model_validate_json(record.end_state)  # type: ignore
+            EnvState.from_v1(V1EnvState.model_validate_json(record.end_state))  # type: ignore
             if record.end_state  # type: ignore
             else None
         )  # type: ignore
@@ -302,12 +298,12 @@ class Episode(WithDB):
 
     def record(
         self,
-        state: V1EnvState,
+        state: EnvState,
         action: V1Action,
         tool: V1ToolRef,
         prompt: Optional[Prompt | str] = None,
         result: Optional[Any] = None,
-        end_state: Optional[V1EnvState] = None,
+        end_state: Optional[EnvState] = None,
         namespace: str = "default",
         metadata: dict = {},
         owner_id: Optional[str] = None,

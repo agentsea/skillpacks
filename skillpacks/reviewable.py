@@ -5,15 +5,25 @@ import time
 import json
 
 from pydantic import BaseModel
+from PIL import Image
 
 from skillpacks.db.models import ReviewRecord, ReviewableRecord
 from skillpacks.db.conn import WithDB
-from skillpacks.server.models import ReviewerType, V1BoundingBox, V1BoundingBoxReviewable, V1Reviewable
+from skillpacks.server.models import (
+    ReviewerType,
+    V1BoundingBox,
+    V1BoundingBoxReviewable,
+    V1Reviewable,
+)
 from .review import Review
+from .img import convert_images
 
-ReviewableModel = TypeVar("ReviewableModel", bound="BaseModel") # this means the model of the reivewable needs to be valid BaseModel AKA V1BoundingBoxReviewable
-ReviewableType = TypeVar("ReviewableType", bound="Reviewable") # means needs to be a valid reviewable
-
+ReviewableModel = TypeVar(
+    "ReviewableModel", bound="BaseModel"
+)  # this means the model of the reivewable needs to be valid BaseModel AKA V1BoundingBoxReviewable
+ReviewableType = TypeVar(
+    "ReviewableType", bound="Reviewable"
+)  # means needs to be a valid reviewable
 
 
 class Reviewable(Generic[ReviewableModel], ABC, WithDB):
@@ -78,7 +88,7 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
             # reviews are associated via the relationship, not stored directly, For more info look in the save function
         )
 
-    @classmethod # this is dependent on the type already being determined and using the correct type from the type Map
+    @classmethod  # this is dependent on the type already being determined and using the correct type from the type Map
     def from_record(cls, record: ReviewableRecord) -> ReviewableType:
         # Deserialize the reviewable JSON to a ReviewableModel (like V1BoundingBoxReviewable)
         reviewable_model = cls.v1_type().model_validate_json(str(record.reviewable))
@@ -110,7 +120,9 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
                     review.save()
                 # Refresh the record to get the latest state
                 record = (
-                    db.query(ReviewableRecord).filter(ReviewableRecord.id == self.id).first()
+                    db.query(ReviewableRecord)
+                    .filter(ReviewableRecord.id == self.id)
+                    .first()
                 )
 
                 if not record:
@@ -123,7 +135,9 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
                 db.commit()
 
     @classmethod
-    def _get_reviewable_class_by_type(cls, reviewable_type: str) -> Optional[Type[ReviewableType]]:
+    def _get_reviewable_class_by_type(
+        cls, reviewable_type: str
+    ) -> Optional[Type["Reviewable"]]:
         """Return the appropriate flag class based on the flag type."""
         return type_map.get(reviewable_type)
 
@@ -139,12 +153,14 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
             reviewables = []
             for record in records:
                 # Dynamically determine the correct class for the reviewable type
-                reviewable_class = cls._get_reviewable_class_by_type(record.type)
+                reviewable_class = cls._get_reviewable_class_by_type(str(record.type))
                 if reviewable_class:
                     record_instance = reviewable_class.from_record(record)
                     reviewables.append(record_instance)
                 else:
-                    raise Exception(f"Class for type {record.type} not found, Record: ", record)
+                    raise Exception(
+                        f"Class for type {record.type} not found, Record: ", record
+                    )
 
             return reviewables
         return []
@@ -163,16 +179,18 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
                 V1Reviewable(
                     type=str(record.type),
                     id=str(record.id),
-                    resource_type=record.resource_type,
-                    resource_id=record.resource_id,
+                    resource_type=str(record.resource_type),
+                    resource_id=str(record.resource_id),
                     reviewable=json.loads(str(record.reviewable)),
-                    reviews=[review.to_v1() for review in record.reviews] if record.reviews else [],
+                    reviews=[review.to_v1() for review in record.reviews]
+                    if record.reviews
+                    else [],
                     created=record.created,  # type: ignore
                 )
                 for record in records
             ]
         return []
-    
+
     def _save_review(
         self,
         reviewer: str,
@@ -180,8 +198,10 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
         reviewer_type: str = ReviewerType.HUMAN.value,
         reason: Optional[str] = None,
         parent_id: Optional[str] = None,
-        correction: Optional[Type[BaseModel]] = None,
-        correction_schema: Optional[Type[BaseModel]] = None, # This is a type, not an instance
+        correction: Optional[BaseModel] = None,
+        correction_schema: Optional[
+            Type[BaseModel]
+        ] = None,  # This is a type, not an instance
     ) -> None:
         review = Review(
             reviewer=reviewer,
@@ -192,7 +212,7 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
             resource_type="reviewable",
             resource_id=self.id,
             correction=correction.model_dump_json() if correction else None,
-            correction_schema=correction_schema
+            correction_schema=correction_schema,
         )
 
         self.reviews.append(review)
@@ -204,14 +224,14 @@ class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable]):
 
     def __init__(
         self,
-        img: str,
+        img: str | Image.Image,
         target: str,
         bbox: V1BoundingBox,
         metadata: Optional[Dict[str, str]] = None,
         **kwargs,  # Catch any additional keyword arguments for parent class
     ):
         super().__init__(**kwargs)
-        self.img = img
+        self.img = convert_images([img])[0]
         self.target = target
         self.bbox = bbox
         self.metadata = metadata
@@ -227,11 +247,12 @@ class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable]):
             bbox=self.bbox,
         )
 
-    def post_review(self,
+    def post_review(
+        self,
         reviewer: str,
         approved: bool,
         reason: Optional[str] = None,
-        reviewer_type: Optional[str] = None,
+        reviewer_type: str = ReviewerType.HUMAN.value,
         parent_id: Optional[str] = None,
         correction: Optional[V1BoundingBox] = None,
     ) -> None:
@@ -255,7 +276,7 @@ class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable]):
 
 
 type_map = {
-        "BoundingBoxReviewable": BoundingBoxReviewable,
-        # "OtherFlagType": OtherFlagType,  # Map other flag types here
-        # Add more mappings as needed
-    }
+    "BoundingBoxReviewable": BoundingBoxReviewable,
+    # "OtherFlagType": OtherFlagType,  # Map other flag types here
+    # Add more mappings as needed
+}
