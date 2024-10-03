@@ -8,8 +8,6 @@ from pydantic import BaseModel
 from skillpacks.db.models import ReviewRecord
 from skillpacks.db.conn import WithDB
 from skillpacks.server.models import ReviewerType, V1Review
-from pydantic import BaseModel
-
 
 class Review(WithDB):
     """A review of an agent action or task"""
