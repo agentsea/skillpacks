@@ -1,10 +1,12 @@
-from typing import Optional, List
+from typing import Optional, List, Type
 import shortuuid
 import time
+import json
 
 from skillpacks.db.models import ReviewRecord
 from skillpacks.db.conn import WithDB
 from skillpacks.server.models import ReviewerType, V1Review
+from pydantic import BaseModel
 
 
 class Review(WithDB):
@@ -15,8 +17,8 @@ class Review(WithDB):
         reviewer: str,
         approved: bool,
         resource_type: str,
-        resource_id: str,
-        with_resources: Optional[List[str]],
+        resource_id: Optional[str] = None,
+        with_resources: Optional[List[str]] = [],
         reviewer_type: str = ReviewerType.HUMAN.value,
         reason: Optional[str] = None,
         parent_id: Optional[str] = None,
@@ -101,10 +103,10 @@ class Review(WithDB):
             reason=self.reason,
             resource_type=self.resource_type,
             resource_id=self.resource_id,
-            with_resources=self.with_resources,
+            with_resources=json.dumps(self.with_resources),
             parent_id=self.parent_id,
             correction=self.correction,
-            correction_schema=self.correction_schema,
+            correction_schema=json.dumps(self.correction_schema) if self.correction_schema else None,
             created=self.created,
             updated=self.updated,
         )
@@ -121,7 +123,7 @@ class Review(WithDB):
         review.parent_id = record.parent_id
         review.resource_type = record.resource_type
         review.resource_id = record.resource_id
-        review.with_resources = record.with_resources
+        review.with_resources = json.loads(record.with_resources) if record.with_resources else []
         review.correction = correction
         review.correction_schema = correction_schema
         review.created = record.created

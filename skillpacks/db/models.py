@@ -6,7 +6,6 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-
 action_reviews = Table(
     "action_reviews",
     Base.metadata,
@@ -14,8 +13,30 @@ action_reviews = Table(
     Column("review_id", String, ForeignKey("reviews.id")),
 )
 
+reviewable_reviews = Table(
+    "reviewable_reviews",
+    Base.metadata,
+    Column("reviewable_id", String, ForeignKey("reviewables.id")),
+    Column("review_id", String, ForeignKey("reviews.id")),
+)
 
 # Database Models
+class ReviewableRecord(Base):
+    __tablename__ = "reviewables"
+
+    id = Column(String, primary_key=True)
+    type = Column(String)
+    reviewable = Column(Text)
+    created = Column(Float, default=time.time)
+    updated = Column(Float, default=time.time)
+    resource_type = Column(String, nullable=True)
+    resource_id = Column(String, nullable=True)
+    reviews = relationship(
+        "ReviewRecord",
+        secondary=reviewable_reviews, # TODO find other way than association table
+        lazy="select",  # or 'select', depending on your preference
+    )
+
 class ReviewRecord(Base):
     __tablename__ = "reviews"
 

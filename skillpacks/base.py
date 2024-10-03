@@ -133,6 +133,8 @@ class ActionEvent(WithDB):
             # After committing the action, associate the reviews
             if self.reviews:
                 for review in self.reviews:
+                    if not review.resource_id:
+                        review.resource_id = self.id
                     review.save()
                 # Refresh the record to get the latest state
                 record = (
