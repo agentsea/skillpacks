@@ -76,8 +76,6 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
     def to_record(self) -> ReviewableRecord:
         """Converts the instance to a database record."""
 
-        # TODO need to convert the images to links like in actions
-
         return ReviewableRecord(
             id=self.id,
             type=self.__class__.__name__,
