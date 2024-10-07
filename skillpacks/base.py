@@ -7,7 +7,7 @@ from mllm import Prompt
 from sqlalchemy import asc
 
 from .db.conn import WithDB
-from .db.models import ActionRecord, EpisodeRecord, ReviewRecord
+from .db.models import ActionRecord, EpisodeRecord, ReviewRecord, ReviewableRecord
 from .server.models import (
     V1ActionEvent,
     V1ToolRef,
@@ -17,6 +17,7 @@ from .server.models import (
     V1EnvState,
 )
 from .review import Review
+from .reviewable import Reviewable, BoundingBoxReviewable, reviewable_type_map, reviewable_string_map
 from .img import convert_images
 from .state import EnvState
 
@@ -39,6 +40,7 @@ class ActionEvent(WithDB):
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
         reviews: Optional[List[Review]] = None,
+        reviewables: Optional[List[Reviewable]] = None,
     ) -> None:
         self.id = shortuuid.uuid()
         self.state = state
@@ -55,6 +57,7 @@ class ActionEvent(WithDB):
         self.model = model
         self.agent_id = agent_id
         self.reviews = reviews or []
+        self.reviewables = reviewables or []
 
     def post_review(
         self,
@@ -76,6 +79,28 @@ class ActionEvent(WithDB):
         self.reviews.append(review)
         self.save()
 
+    def post_reviewable(self, type: str, **kwargs) -> None:
+        # Ensure the provided type is valid by checking the string map
+        if type not in reviewable_string_map:
+            raise ValueError(f"Invalid reviewable type: {type}")
+
+        # Fetch the reviewable class dynamically from the reviewable_type_map using the string map
+        reviewable_class = reviewable_type_map.get(reviewable_string_map[type])
+
+        if reviewable_class is None:
+            raise ValueError(f"Reviewable class for type '{type}' not found.")
+
+        # Create an instance of the reviewable dynamically using the class
+        reviewable = reviewable_class(
+            **kwargs,
+            resource_type="action",
+            resource_id=self.id      # Set the resource ID to the action's ID
+        )
+
+        # Add the new reviewable to the action's reviewables list and save the action
+        self.reviewables.append(reviewable)
+        self.save()
+
     def to_v1(self) -> V1ActionEvent:
         return V1ActionEvent(
             id=self.id,
@@ -92,6 +117,7 @@ class ActionEvent(WithDB):
             agent_id=self.agent_id,
             metadata=self.metadata,
             reviews=[review.to_v1() for review in self.reviews] if self.reviews else [],
+            reviewables=[reviewable.to_v1Reviewable() for reviewable in self.reviewables] if self.reviewables else [],
         )
 
     @classmethod
@@ -117,6 +143,11 @@ class ActionEvent(WithDB):
         event.reviews = (
             [Review.from_v1(review_v1) for review_v1 in v1.reviews]
             if v1.reviews
+            else []
+        )
+        event.reviewables = (
+            [Reviewable.from_v1Reviewable(reviewable_v1) for reviewable_v1 in v1.reviewables]
+            if v1.reviewables
             else []
         )
         event.created = v1.created
@@ -149,6 +180,25 @@ class ActionEvent(WithDB):
                     db.query(ReviewRecord).filter_by(id=review.id).first()
                     for review in self.reviews
                 ]
+            
+            # After committing the action, associate the reviewables TODO combine this with reviews if possible
+            if self.reviewables:
+                for reviewable in self.reviewables:
+                    if not reviewable.resource_id:
+                        reviewable.resource_id = self.id
+                    reviewable.save()
+                # Refresh the record to get the latest state
+                record = (
+                    db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
+                )
+
+                if not record:
+                    raise ValueError(f"ActionRecord with id {self.id} not found")
+                # Associate the reviewables with the action via the association table
+                record.reviewables = [
+                    db.query(ReviewableRecord).filter_by(id=reviewable.id).first()
+                    for reviewable in self.reviewables
+                ]
                 db.commit()
 
     def to_record(self) -> ActionRecord:
@@ -174,7 +224,7 @@ class ActionEvent(WithDB):
             owner_id=self.owner_id,
             model=self.model,
             agent_id=self.agent_id,
-            # reviews are associated via the relationship, not stored directly
+            # review & reviewables are associated via the relationship, not stored directly
         )
 
     @classmethod
@@ -183,6 +233,9 @@ class ActionEvent(WithDB):
         # Load reviews associated with the action
         reviews = [
             Review.from_record(review_record) for review_record in record.reviews
+        ]
+        reviewables = [
+            Reviewable.from_record(reviewable_record) for reviewable_record in record.reviewables
         ]
         event.id = record.id
         event.state = EnvState.from_v1(V1EnvState.model_validate_json(record.state))  # type: ignore
@@ -205,6 +258,7 @@ class ActionEvent(WithDB):
         event.model = record.model
         event.agent_id = record.agent_id
         event.reviews = reviews
+        event.reviewables = reviewables
         event.created = record.created
         return event
 

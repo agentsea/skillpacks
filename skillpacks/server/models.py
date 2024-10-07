@@ -70,6 +70,15 @@ class V1EnvState(BaseModel):
     video: Optional[str] = None
     text: Optional[str] = None
 
+class V1Reviewable(BaseModel):
+    type: str
+    id: str
+    reviewable: Dict[str, Any]
+    reviews: List[V1Review] = []
+    resource_type: str
+    resource_id: str
+    created: float
+    updated: Optional[float] = None
 
 class V1ActionEvent(BaseModel):
     """An action that has occurred"""
@@ -83,6 +92,7 @@ class V1ActionEvent(BaseModel):
     namespace: str
     prompt: Optional[V1Prompt] = None
     reviews: List[V1Review] = []
+    reviewables: List[V1Reviewable] = []
     flagged: bool = False
     model: Optional[str] = None
     agent_id: Optional[str] = None
@@ -107,6 +117,7 @@ class V1CreateActionEvent(BaseModel):
     metadata: dict = {}
     prompt: Optional[V1Prompt] = None
     reviews: List[V1Review] = []
+    reviewables: List[V1Reviewable] = []
     flagged: bool = False
     model: Optional[str] = None
     agent_id: Optional[str] = None
@@ -136,17 +147,6 @@ class V1UserProfile(BaseModel):
     created: Optional[int] = None
     updated: Optional[int] = None
     token: Optional[str] = None
-
-
-class V1Reviewable(BaseModel):
-    type: str
-    id: str
-    reviewable: Dict[str, Any]
-    reviews: List[V1Review] = []
-    resource_type: str
-    resource_id: str
-    created: float
-
 
 class V1BoundingBox(BaseModel):
     """A bounding box"""

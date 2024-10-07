@@ -20,6 +20,13 @@ reviewable_reviews = Table(
     Column("review_id", String, ForeignKey("reviews.id")),
 )
 
+action_reviewables = Table(
+    "action_reviewables",
+    Base.metadata,
+    Column("action_id", String, ForeignKey("actions.id")),
+    Column("reviewable_id", String, ForeignKey("reviewables.id")),
+)
+
 # Database Models
 class ReviewableRecord(Base):
     __tablename__ = "reviewables"
@@ -76,7 +83,11 @@ class ActionRecord(Base):
 
     episode_id = Column(String, ForeignKey("episodes.id"), nullable=True)
     episode = relationship("EpisodeRecord", back_populates="actions")
-
+    reviewables = relationship(
+        "ReviewableRecord",
+        secondary=action_reviewables,
+        lazy="select",
+    )
     reviews = relationship(
         "ReviewRecord",
         secondary=action_reviews,
