@@ -126,14 +126,14 @@ class ActionEvent(WithDB):
     ) -> "ActionEvent":
         event = cls.__new__(cls)
         event.id = v1.id
-        event.state = v1.state
+        event.state = EnvState.from_v1(v1.state)
         event.action = v1.action
         event.tool = v1.tool
         event.prompt = (
             Prompt.from_v1(v1.prompt) if v1.prompt else None
         )  # Replace Prompt with your actual class
         event.result = v1.result
-        event.end_state = v1.end_state
+        event.end_state = EnvState.from_v1(v1.end_state) if v1.end_state else None
         event.namespace = v1.namespace
         event.metadata = v1.metadata
         event.flagged = v1.flagged
