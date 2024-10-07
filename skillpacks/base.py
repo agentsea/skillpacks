@@ -17,8 +17,8 @@ from .server.models import (
     V1EnvState,
 )
 from .review import Review
-from .reviewable import Reviewable, BoundingBoxReviewable, reviewable_type_map, reviewable_string_map
-from .img import convert_images
+from .reviewable import Reviewable, reviewable_type_map, reviewable_string_map
+# from .img import convert_images not used, do we need it?
 from .state import EnvState
 
 
