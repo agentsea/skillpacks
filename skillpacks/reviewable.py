@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import TypeVar, Optional, Generic, Type, Dict, List
 from abc import ABC, abstractmethod
 import shortuuid
@@ -63,6 +64,7 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
         pass
 
     def to_v1Reviewable(self) -> V1Reviewable:
+        """Use this instead of to_v1 to get a standard reviewable"""
         return V1Reviewable(
             type=self.__class__.__name__,
             id=self.id,
@@ -71,7 +73,41 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
             reviewable=self.to_v1().model_dump(),
             reviews=[review.to_v1() for review in self.reviews] if self.reviews else [],
             created=self.created,
+            updated=self.updated
         )
+
+    @classmethod
+    def from_v1Reviewable(cls, v1: V1Reviewable) -> Reviewable:
+        """Use this instead of to_v1 to get a standard reviewable"""
+        
+        # Get the correct class for the reviewable based on its type
+        reviewable_class = cls._get_reviewable_class_by_type(v1.type)
+        
+        if not reviewable_class:
+            raise ValueError(f"Invalid reviewable type: {v1.type}")
+
+        # Deserialize the reviewable field (which is currently a dictionary) into the appropriate Pydantic model
+        reviewable_model = reviewable_class.v1_type().model_validate(v1.reviewable)
+
+        # Use the correct class to deserialize the `reviewable` field
+        reviewable_instance = reviewable_class.from_v1(reviewable_model)
+
+        # Populate the standard fields for the Reviewable
+        reviewable_instance.id = v1.id
+        reviewable_instance.resource_type = v1.resource_type
+        reviewable_instance.resource_id = v1.resource_id
+        reviewable_instance.reviews = (
+            [Review.from_v1(review_v1) for review_v1 in v1.reviews]
+            if v1.reviews
+            else []
+        )
+        reviewable_instance.created = v1.created
+        reviewable_instance.updated = v1.updated
+        
+        # # Print the final reviewable instance before returning
+        # print(f"Final reviewable instance (full data): {vars(reviewable_instance)}")
+
+        return reviewable_instance
 
     def to_record(self) -> ReviewableRecord:
         """Converts the instance to a database record."""
@@ -81,6 +117,7 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
             type=self.__class__.__name__,
             reviewable=self.to_v1().model_dump_json(),
             created=self.created,
+            updated=self.updated,
             resource_type=self.resource_type,
             resource_id=self.resource_id,
             # reviews are associated via the relationship, not stored directly, For more info look in the save function
@@ -88,11 +125,14 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
 
     @classmethod  # this is dependent on the type already being determined and using the correct type from the type Map
     def from_record(cls, record: ReviewableRecord) -> ReviewableType:
-        # Deserialize the reviewable JSON to a ReviewableModel (like V1BoundingBoxReviewable)
-        reviewable_model = cls.v1_type().model_validate_json(str(record.reviewable))
+        # Resolve the correct subclass from the type_map
+        reviewable_class = cls._get_reviewable_class_by_type(record.type)
 
-        # Use the from_v1 method to create the specific ReviewableType (like BoundingBoxReviewable)
-        instance = cls.from_v1(reviewable_model)
+        # With the correct subclass, Deserialize the reviewable JSON to a ReviewableModel (like V1BoundingBoxReviewable)
+        reviewable_model = reviewable_class.v1_type().model_validate_json(str(record.reviewable))
+
+        # Use the from_v1 method to create the specific ReviewableType instance (like BoundingBoxReviewable)
+        instance = reviewable_class.from_v1(reviewable_model)
 
         # Set additional fields from the record
         instance.id = record.id
@@ -100,6 +140,7 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
             Review.from_record(review_record) for review_record in record.reviews
         ]
         instance.created = record.created
+        instance.updated = record.updated
         instance.resource_type = record.resource_type
         instance.resource_id = record.resource_id
 
@@ -133,11 +174,14 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
                 db.commit()
 
     @classmethod
-    def _get_reviewable_class_by_type(
-        cls, reviewable_type: str
-    ) -> Optional[Type["Reviewable"]]:
-        """Return the appropriate flag class based on the flag type."""
-        return type_map.get(reviewable_type)
+    def _get_reviewable_class_by_type(cls, reviewable_type: str) -> Type["Reviewable"]:
+        """Return the appropriate reviewable class based on the reviewable type."""
+        reviewable_class = reviewable_type_map.get(reviewable_type)
+
+        if not reviewable_class:
+            raise ValueError(f"Invalid reviewable type: {reviewable_type}")
+        
+        return reviewable_class
 
     @classmethod
     def find(cls, **kwargs) -> List[ReviewableType]:
@@ -265,7 +309,7 @@ class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable]):
         )
 
     @classmethod
-    def from_v1(cls, v1: V1BoundingBoxReviewable) -> "BoundingBoxReviewable":
+    def from_v1(cls, v1: V1BoundingBoxReviewable) -> BoundingBoxReviewable:
         out = cls.__new__(cls)
         out.img = v1.img
         out.target = v1.target
@@ -273,8 +317,13 @@ class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable]):
         return out
 
 
-type_map = {
+reviewable_type_map = {
     "BoundingBoxReviewable": BoundingBoxReviewable,
-    # "OtherFlagType": OtherFlagType,  # Map other flag types here
+    # "OtherReviewableType": OtherReviewableType,  # Map other Reviewable types here
     # Add more mappings as needed
+}
+
+reviewable_string_map = {
+    "BoundingBoxReviewable": "BoundingBoxReviewable",
+    # "OtherReviewableType": "OtherReviewableType"
 }
