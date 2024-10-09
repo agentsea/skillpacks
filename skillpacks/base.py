@@ -199,7 +199,7 @@ class ActionEvent(WithDB):
                     db.query(ReviewableRecord).filter_by(id=reviewable.id).first()
                     for reviewable in self.reviewables
                 ]
-                db.commit()
+            db.commit()
 
     def to_record(self) -> ActionRecord:
         """Converts the instance to a database record."""
