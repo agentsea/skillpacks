@@ -126,7 +126,7 @@ class Reviewable(Generic[ReviewableModel, ReviewableType], ABC, WithDB):
     @classmethod  # this is dependent on the type already being determined and using the correct type from the type Map
     def from_record(cls, record: ReviewableRecord) -> ReviewableType:
         # Resolve the correct subclass from the type_map
-        reviewable_class = cls._get_reviewable_class_by_type(record.type.value)
+        reviewable_class = cls._get_reviewable_class_by_type((record.type))  # type: ignore
 
         # With the correct subclass, Deserialize the reviewable JSON to a ReviewableModel (like V1BoundingBoxReviewable)
         reviewable_model = reviewable_class.v1_type().model_validate_json(str(record.reviewable))
