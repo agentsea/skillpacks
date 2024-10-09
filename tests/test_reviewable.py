@@ -17,7 +17,7 @@ def bounding_box_reviewable():
     )
 
 
-def test_bounding_box_reviewable_creation(bounding_box_reviewable):
+def test_bounding_box_reviewable_creation(bounding_box_reviewable: BoundingBoxReviewable):
     """Test that a BoundingBoxReviewable instance is created correctly."""
     assert bounding_box_reviewable.img == "https://example.com/img.png"
     assert bounding_box_reviewable.target == "Object A"
@@ -25,7 +25,7 @@ def test_bounding_box_reviewable_creation(bounding_box_reviewable):
     assert isinstance(bounding_box_reviewable, BoundingBoxReviewable)
 
 
-def test_bounding_box_reviewable_save(bounding_box_reviewable):
+def test_bounding_box_reviewable_save(bounding_box_reviewable: BoundingBoxReviewable):
     """Test saving a BoundingBoxReviewable instance to the database."""
     # Save the reviewable to the test database
     bounding_box_reviewable.save()
@@ -36,10 +36,10 @@ def test_bounding_box_reviewable_save(bounding_box_reviewable):
             db.query(ReviewableRecord).filter_by(id=bounding_box_reviewable.id).first()
         )
         assert reviewable_record is not None
-        assert reviewable_record.type == "BoundingBoxReviewable"
+        assert reviewable_record.type == "BoundingBoxReviewable" # type: ignore
 
 
-def test_find_and_save_bounding_box_reviewable(bounding_box_reviewable):
+def test_find_and_save_bounding_box_reviewable(bounding_box_reviewable: BoundingBoxReviewable):
     """Test finding the saved BoundingBoxReviewable from the database."""
     # Save the reviewable to the database
     bounding_box_reviewable.save()
@@ -51,7 +51,7 @@ def test_find_and_save_bounding_box_reviewable(bounding_box_reviewable):
     assert found_reviewables[0].id == bounding_box_reviewable.id
 
 
-def test_bounding_box_reviewable_with_reviews(bounding_box_reviewable):
+def test_bounding_box_reviewable_with_reviews(bounding_box_reviewable: BoundingBoxReviewable):
     """Test saving a BoundingBoxReviewable instance with reviews."""
     bbox = V1BoundingBox(x0=15, x1=150, y0=23, y1=190)
     review1 = Review(
@@ -77,10 +77,11 @@ def test_bounding_box_reviewable_with_reviews(bounding_box_reviewable):
         reviewable_record = (
             db.query(ReviewableRecord).filter_by(id=bounding_box_reviewable.id).first()
         )
+        assert reviewable_record is not None, "Reviewable record not found in the database"
         assert len(reviewable_record.reviews) == 2
 
 
-def test_bounding_box_reviewable_with_post_reviews(bounding_box_reviewable):
+def test_bounding_box_reviewable_with_post_reviews(bounding_box_reviewable: BoundingBoxReviewable):
     """Test saving a BoundingBoxReviewable instance with reviews."""
     # Save the reviewable before its review
     bounding_box_reviewable.save()
@@ -96,10 +97,11 @@ def test_bounding_box_reviewable_with_post_reviews(bounding_box_reviewable):
         reviewable_record = (
             db.query(ReviewableRecord).filter_by(id=bounding_box_reviewable.id).first()
         )
+        assert reviewable_record is not None, "Reviewable record not found in the database"
         assert len(reviewable_record.reviews) == 2
 
 
-def test_find_v1_reviewable(bounding_box_reviewable):
+def test_find_v1_reviewable(bounding_box_reviewable: BoundingBoxReviewable):
     """Test finding and converting Reviewable instances to V1 format."""
     bounding_box_reviewable.save()
 

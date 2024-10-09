@@ -27,7 +27,7 @@ ReviewableType = TypeVar(
 )  # means needs to be a valid reviewable
 
 
-class Reviewable(Generic[ReviewableModel], ABC, WithDB):
+class Reviewable(Generic[ReviewableModel, ReviewableType], ABC, WithDB):
     """A reviewable, a thing that needs review (usually human) that isn't an action or task, EX. BoundingBox or Demonstration"""
 
     def __init__(
@@ -55,7 +55,7 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
         pass
 
     @abstractmethod
-    def post_review(cls) -> None:
+    def post_review(cls, *args, **kwargs) -> None:
         pass
 
     @classmethod
@@ -126,7 +126,7 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
     @classmethod  # this is dependent on the type already being determined and using the correct type from the type Map
     def from_record(cls, record: ReviewableRecord) -> ReviewableType:
         # Resolve the correct subclass from the type_map
-        reviewable_class = cls._get_reviewable_class_by_type(record.type)
+        reviewable_class = cls._get_reviewable_class_by_type(record.type.value)
 
         # With the correct subclass, Deserialize the reviewable JSON to a ReviewableModel (like V1BoundingBoxReviewable)
         reviewable_model = reviewable_class.v1_type().model_validate_json(str(record.reviewable))
@@ -261,7 +261,7 @@ class Reviewable(Generic[ReviewableModel], ABC, WithDB):
         self.save()
 
 
-class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable]):
+class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable, "BoundingBoxReviewable"]):
     """Bounding box reviewable"""
 
     def __init__(
