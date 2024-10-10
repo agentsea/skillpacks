@@ -18,6 +18,7 @@ from .server.models import (
 )
 from .review import Review
 from .reviewable import Reviewable, reviewable_type_map, reviewable_string_map
+
 # from .img import convert_images not used, do we need it?
 from .state import EnvState
 
@@ -34,13 +35,15 @@ class ActionEvent(WithDB):
         result: Optional[Any] = None,
         end_state: Optional[EnvState] = None,
         namespace: str = "default",
-        metadata: dict = {},
+        metadata: Optional[dict] = None,
         flagged: bool = False,
         owner_id: Optional[str] = None,
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
         reviews: Optional[List[Review]] = None,
         reviewables: Optional[List[Reviewable]] = None,
+        hidden: bool = False,
+        episode_id: Optional[str] = None,
     ) -> None:
         self.id = shortuuid.uuid()
         self.state = state
@@ -50,7 +53,7 @@ class ActionEvent(WithDB):
         self.end_state = end_state
         self.tool = tool
         self.namespace = namespace
-        self.metadata = metadata
+        self.metadata = metadata if metadata else {}
         self.created = time.time()
         self.flagged = flagged
         self.owner_id = owner_id
@@ -58,6 +61,8 @@ class ActionEvent(WithDB):
         self.agent_id = agent_id
         self.reviews = reviews or []
         self.reviewables = reviewables or []
+        self.hidden = hidden
+        self.episode_id = episode_id
 
     def post_review(
         self,
@@ -94,7 +99,7 @@ class ActionEvent(WithDB):
         reviewable = reviewable_class(
             **kwargs,
             resource_type="action",
-            resource_id=self.id      # Set the resource ID to the action's ID
+            resource_id=self.id,  # Set the resource ID to the action's ID
         )
 
         # Add the new reviewable to the action's reviewables list and save the action
@@ -117,7 +122,13 @@ class ActionEvent(WithDB):
             agent_id=self.agent_id,
             metadata=self.metadata,
             reviews=[review.to_v1() for review in self.reviews] if self.reviews else [],
-            reviewables=[reviewable.to_v1Reviewable() for reviewable in self.reviewables] if self.reviewables else [],
+            reviewables=[
+                reviewable.to_v1Reviewable() for reviewable in self.reviewables
+            ]
+            if self.reviewables
+            else [],
+            episode_id=self.episode_id,
+            hidden=self.hidden,
         )
 
     @classmethod
@@ -140,17 +151,22 @@ class ActionEvent(WithDB):
         event.owner_id = owner_id
         event.model = v1.model
         event.agent_id = v1.agent_id
+        event.episode_id = v1.episode_id
         event.reviews = (
             [Review.from_v1(review_v1) for review_v1 in v1.reviews]
             if v1.reviews
             else []
         )
         event.reviewables = (
-            [Reviewable.from_v1Reviewable(reviewable_v1) for reviewable_v1 in v1.reviewables]
+            [
+                Reviewable.from_v1Reviewable(reviewable_v1)
+                for reviewable_v1 in v1.reviewables
+            ]
             if v1.reviewables
             else []
         )
         event.created = v1.created
+        event.hidden = v1.hidden
         return event
 
     def save(self) -> None:
@@ -180,7 +196,7 @@ class ActionEvent(WithDB):
                     db.query(ReviewRecord).filter_by(id=review.id).first()
                     for review in self.reviews
                 ]
-            
+
             # After committing the action, associate the reviewables TODO combine this with reviews if possible
             if self.reviewables:
                 for reviewable in self.reviewables:
@@ -224,7 +240,8 @@ class ActionEvent(WithDB):
             owner_id=self.owner_id,
             model=self.model,
             agent_id=self.agent_id,
-            # review & reviewables are associated via the relationship, not stored directly
+            episode_id=self.episode_id,
+            hidden=self.hidden,
         )
 
     @classmethod
@@ -235,7 +252,8 @@ class ActionEvent(WithDB):
             Review.from_record(review_record) for review_record in record.reviews
         ]
         reviewables = [
-            Reviewable.from_record(reviewable_record) for reviewable_record in record.reviewables
+            Reviewable.from_record(reviewable_record)
+            for reviewable_record in record.reviewables
         ]
         event.id = record.id
         event.state = EnvState.from_v1(V1EnvState.model_validate_json(record.state))  # type: ignore
@@ -260,6 +278,8 @@ class ActionEvent(WithDB):
         event.reviews = reviews
         event.reviewables = reviewables
         event.created = record.created
+        event.episode_id = record.episode_id
+        event.hidden = record.hidden
         return event
 
     @classmethod
@@ -300,21 +320,21 @@ class Episode(WithDB):
 
     def __init__(
         self,
-        actions: List[ActionEvent] = [],
+        actions: Optional[List[ActionEvent]] = None,
         remote: Optional[str] = None,
-        tags: List[str] = [],
-        labels: Dict[str, Any] = {},
+        tags: Optional[List[str]] = None,
+        labels: Optional[Dict[str, Any]] = None,
         owner_id: Optional[str] = None,
         device: Optional[str] = None,
         device_type: Optional[str] = None,
     ) -> None:
         self.id = shortuuid.uuid()
-        self.actions = actions
+        self.actions = actions if actions else []
         self.created = time.time()
         self.updated = time.time()
         self.remote = remote
-        self.tags = tags
-        self.labels = labels
+        self.tags = tags if tags else []
+        self.labels = labels if labels else {}
         self.owner_id = owner_id
         self.device = device
         self.device_type = device_type
@@ -346,6 +366,7 @@ class Episode(WithDB):
 
     def record_event(self, action: ActionEvent) -> None:
         """Records an action to the episode."""
+        action.episode_id = self.id
         self.actions.append(action)
         self.updated = time.time()
         self.save()
@@ -380,6 +401,7 @@ class Episode(WithDB):
             owner_id=owner_id,
             model=model,
             agent_id=agent_id,
+            episode_id=self.id,
         )
         self.record_event(event)
 
@@ -388,8 +410,6 @@ class Episode(WithDB):
     def save(self) -> None:
         """Saves the instance to the database."""
         for db in self.get_db():
-            for action in self.actions:
-                action.save()
             record = self.to_record()
             db.merge(record)
             db.commit()
@@ -405,9 +425,9 @@ class Episode(WithDB):
             owner_id=self.owner_id,
             device=self.device,
             device_type=self.device_type,
+            actions=[action.to_record() for action in self.actions],
         )
         # Convert all actions to records and associate with this episode record
-        episode_record.actions = [action.to_record() for action in self.actions]
         return episode_record
 
     @classmethod
@@ -415,7 +435,10 @@ class Episode(WithDB):
         """Creates an episode instance from a database record."""
         episode = cls.__new__(cls)
         episode.id = record.id
-        episode.actions = [ActionEvent.from_record(action) for action in record.actions]
+        episode.actions = [
+            ActionEvent.from_record(action)
+            for action in sorted(record.actions, key=lambda x: x.created)
+        ]
         episode.tags = json.loads(str(record.tags))
         episode.labels = json.loads(str(record.labels))
         episode.created = record.created
@@ -538,15 +561,24 @@ class Episode(WithDB):
         reviewer_type: str = ReviewerType.HUMAN.value,
     ) -> None:
         """Approve the given event and all prior actions."""
-        self.approve_one(event_id, reviewer, reviewer_type)
-        for i in range(len(self.actions) - 1):
-            if self.actions[i].id == event_id:
-                for j in range(i + 1, len(self.actions)):
-                    self.actions[j].post_review(
-                        reviewer=reviewer,
-                        reviewer_type=reviewer_type,
-                        approved=True,
-                    )
+        # Find the index of the target event
+        target_index = None
+        for index, event in enumerate(self.actions):
+            if event.id == event_id:
+                target_index = index
+                break
+
+        if target_index is None:
+            raise ValueError(f"ActionEvent with id {event_id} not found")
+
+        # Approve the target event and all prior events
+        for i in range(target_index + 1):
+            self.actions[i].post_review(
+                reviewer=reviewer,
+                reviewer_type=reviewer_type,
+                approved=True,
+            )
+
         self.save()
 
     def fail_prior(
@@ -555,14 +587,23 @@ class Episode(WithDB):
         reviewer: str,
         reviewer_type: str = ReviewerType.HUMAN.value,
     ) -> None:
-        """Approve the given event and all prior actions."""
-        self.approve_one(event_id, reviewer, reviewer_type)
-        for i in range(len(self.actions) - 1):
-            if self.actions[i].id == event_id:
-                for j in range(i + 1, len(self.actions)):
-                    self.actions[j].post_review(
-                        reviewer=reviewer,
-                        reviewer_type=reviewer_type,
-                        approved=True,
-                    )
+        """Fail the given event and all prior actions."""
+        # Find the index of the target event
+        target_index = None
+        for index, event in enumerate(self.actions):
+            if event.id == event_id:
+                target_index = index
+                break
+
+        if target_index is None:
+            raise ValueError(f"ActionEvent with id {event_id} not found")
+
+        # Fail the target event and all prior events
+        for i in range(target_index + 1):
+            self.actions[i].post_review(
+                reviewer=reviewer,
+                reviewer_type=reviewer_type,
+                approved=False,
+            )
+
         self.save()
