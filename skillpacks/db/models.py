@@ -27,6 +27,7 @@ action_reviewables = Table(
     Column("reviewable_id", String, ForeignKey("reviewables.id")),
 )
 
+
 # Database Models
 class ReviewableRecord(Base):
     __tablename__ = "reviewables"
@@ -40,9 +41,10 @@ class ReviewableRecord(Base):
     resource_id = Column(String, nullable=True)
     reviews = relationship(
         "ReviewRecord",
-        secondary=reviewable_reviews, # TODO find other way than association table
+        secondary=reviewable_reviews,  # TODO find other way than association table
         lazy="select",  # or 'select', depending on your preference
     )
+
 
 class ReviewRecord(Base):
     __tablename__ = "reviews"
@@ -80,6 +82,7 @@ class ActionRecord(Base):
     model = Column(String, default=None)
     agent_id = Column(String, default=None)
     created = Column(Float, default=time.time)
+    hidden = Column(Boolean, default=False)
 
     episode_id = Column(String, ForeignKey("episodes.id"), nullable=True)
     episode = relationship("EpisodeRecord", back_populates="actions")
@@ -109,7 +112,7 @@ class EpisodeRecord(Base):
 
     actions = relationship(
         "ActionRecord",
-        order_by=ActionRecord.id,
+        order_by=ActionRecord.created,
         back_populates="episode",
         cascade="all, delete-orphan",
     )

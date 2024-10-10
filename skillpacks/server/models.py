@@ -70,6 +70,7 @@ class V1EnvState(BaseModel):
     video: Optional[str] = None
     text: Optional[str] = None
 
+
 class V1Reviewable(BaseModel):
     type: str
     id: str
@@ -79,6 +80,7 @@ class V1Reviewable(BaseModel):
     resource_id: str
     created: float
     updated: Optional[float] = None
+
 
 class V1ActionEvent(BaseModel):
     """An action that has occurred"""
@@ -98,6 +100,8 @@ class V1ActionEvent(BaseModel):
     agent_id: Optional[str] = None
     created: float
     metadata: dict = {}
+    episode_id: Optional[str] = None
+    hidden: bool = False
 
 
 class V1ActionEvents(BaseModel):
@@ -147,6 +151,7 @@ class V1UserProfile(BaseModel):
     created: Optional[int] = None
     updated: Optional[int] = None
     token: Optional[str] = None
+
 
 class V1BoundingBox(BaseModel):
     """A bounding box"""
