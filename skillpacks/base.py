@@ -410,6 +410,9 @@ class Episode(WithDB):
     def save(self) -> None:
         """Saves the instance to the database."""
         for db in self.get_db():
+            for action in self.actions:
+                action.episode_id = self.id
+                action.save()
             record = self.to_record()
             db.merge(record)
             db.commit()
