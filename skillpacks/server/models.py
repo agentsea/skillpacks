@@ -82,6 +82,13 @@ class V1Reviewable(BaseModel):
     updated: Optional[float] = None
 
 
+class V1ActionOpt(BaseModel):
+    """An action that could have occurred"""
+
+    action: Optional[V1Action] = None
+    prompt: Optional[V1Prompt] = None
+
+
 class V1ActionEvent(BaseModel):
     """An action that has occurred"""
 
@@ -97,6 +104,7 @@ class V1ActionEvent(BaseModel):
     reviewables: List[V1Reviewable] = []
     flagged: bool = False
     model: Optional[str] = None
+    action_opts: Optional[List[V1ActionOpt]] = None
     agent_id: Optional[str] = None
     created: float
     metadata: dict = {}

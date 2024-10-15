@@ -83,6 +83,7 @@ class ActionRecord(Base):
     agent_id = Column(String, default=None)
     created = Column(Float, default=time.time)
     hidden = Column(Boolean, default=False)
+    action_opts = Column(Text, nullable=True)
 
     episode_id = Column(String, ForeignKey("episodes.id"), nullable=True)
     episode = relationship("EpisodeRecord", back_populates="actions")
