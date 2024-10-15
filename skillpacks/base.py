@@ -7,7 +7,12 @@ from mllm import Prompt
 from sqlalchemy import asc
 
 from .db.conn import WithDB
-from .db.models import ActionRecord, EpisodeRecord, ReviewRecord, ReviewableRecord
+from .db.models import (
+    ActionRecord,
+    EpisodeRecord,
+    ReviewRecord,
+    ReviewableRecord,
+)
 from .server.models import (
     V1ActionEvent,
     V1ToolRef,
@@ -15,11 +20,10 @@ from .server.models import (
     V1Episode,
     ReviewerType,
     V1EnvState,
+    V1ActionOpt,
 )
 from .review import Review
 from .reviewable import Reviewable, reviewable_type_map, reviewable_string_map
-
-# from .img import convert_images not used, do we need it?
 from .state import EnvState
 
 
@@ -42,6 +46,7 @@ class ActionEvent(WithDB):
         agent_id: Optional[str] = None,
         reviews: Optional[List[Review]] = None,
         reviewables: Optional[List[Reviewable]] = None,
+        action_opts: Optional[List[V1ActionOpt]] = None,
         hidden: bool = False,
         episode_id: Optional[str] = None,
     ) -> None:
@@ -61,6 +66,7 @@ class ActionEvent(WithDB):
         self.agent_id = agent_id
         self.reviews = reviews or []
         self.reviewables = reviewables or []
+        self.action_opts = action_opts or []
         self.hidden = hidden
         self.episode_id = episode_id
 
@@ -121,6 +127,7 @@ class ActionEvent(WithDB):
             model=self.model,
             agent_id=self.agent_id,
             metadata=self.metadata,
+            action_opts=self.action_opts,
             reviews=[review.to_v1() for review in self.reviews] if self.reviews else [],
             reviewables=[
                 reviewable.to_v1Reviewable() for reviewable in self.reviewables
@@ -152,6 +159,7 @@ class ActionEvent(WithDB):
         event.model = v1.model
         event.agent_id = v1.agent_id
         event.episode_id = v1.episode_id
+        event.action_opts = v1.action_opts
         event.reviews = (
             [Review.from_v1(review_v1) for review_v1 in v1.reviews]
             if v1.reviews
@@ -235,6 +243,7 @@ class ActionEvent(WithDB):
             tool=self.tool.model_dump_json(),
             namespace=self.namespace,
             metadata_=json.dumps(self.metadata),
+            action_opts=json.dumps([opt.model_dump() for opt in self.action_opts]),
             flagged=self.flagged,
             created=self.created,
             owner_id=self.owner_id,
@@ -269,6 +278,10 @@ class ActionEvent(WithDB):
             if record.end_state  # type: ignore
             else None
         )  # type: ignore
+        event.action_opts = [
+            V1ActionOpt.model_validate_json(opt)
+            for opt in json.loads(record.action_opts)  # type: ignore
+        ]
         event.namespace = record.namespace
         event.metadata = json.loads(record.metadata_)  # type: ignore
         event.flagged = record.flagged
@@ -379,6 +392,7 @@ class Episode(WithDB):
         prompt: Optional[Prompt | str] = None,
         result: Optional[Any] = None,
         end_state: Optional[EnvState] = None,
+        action_opts: Optional[List[V1ActionOpt]] = None,
         namespace: str = "default",
         metadata: dict = {},
         owner_id: Optional[str] = None,
@@ -398,6 +412,7 @@ class Episode(WithDB):
             tool=tool,
             namespace=namespace,
             metadata=metadata,
+            action_opts=action_opts,
             owner_id=owner_id,
             model=model,
             agent_id=agent_id,
