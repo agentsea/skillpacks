@@ -392,7 +392,7 @@ class Episode(WithDB):
         prompt: Optional[Prompt | str] = None,
         result: Optional[Any] = None,
         end_state: Optional[EnvState] = None,
-        action_opts: Optional[List[V1ActionOpt]] = None,
+        action_opts: Optional[List[V1ActionOpt]] = [],
         namespace: str = "default",
         metadata: dict = {},
         owner_id: Optional[str] = None,
