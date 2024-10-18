@@ -1,6 +1,10 @@
+import json
+import time
 import pytest
 from mllm import Prompt, RoleThread, RoleMessage
 from skillpacks import Episode, ActionEvent, V1Action, EnvState
+from skillpacks.db.models import ActionRecord
+from skillpacks.server.models import V1ActionEvent
 from toolfuse.models import V1ToolRef
 from typing import List
 
@@ -23,7 +27,7 @@ def create_episode_with_events(num_events: int = 3) -> Episode:
         )
     event = ActionEvent(
         EnvState(images=[f"https://example.com/image99.png"]),
-        V1Action(name=f"action_{i}", parameters={"param": f"value_99"}),
+        V1Action(name=f"action_{i}", parameters={"param": f"value_99"}), # type: ignore
         V1ToolRef(module="test_module", type="TestType", version="0.1.0"),
         prompt=prompt,
     )
@@ -124,3 +128,57 @@ def test_fail_prior():
             assert event.reviews[0].approved == False
         else:
             assert len(event.reviews) == 0
+
+def test_from_v1_and_save():
+    # Create a sample V1ActionEvent JSON
+    v1_action_event_data = {
+        "id": "action-event-001",
+        "state": {
+            "images": ["https://example.com/image1.png"],
+            "coordinates": [10, 20],
+            "text": "Sample environment state",
+        },
+        "action": {
+            "name": "click_button",
+            "parameters": {"button": "submit"},
+        },
+        "result": {"success": True},
+        "end_state": {
+            "images": ["https://example.com/image2.png"],
+            "text": "Post-action environment state",
+        },
+        "tool": {
+            "module": "test_module",
+            "type": "TestTool",
+            "version": "0.1.0",
+        },
+        "namespace": "default",
+        "reviews": [],
+        "reviewables": [],
+        "flagged": False,
+        "model": None,
+        "action_opts": None,
+        "agent_id": "agent-123",
+        "created": time.time(),
+        "metadata": {},
+        "episode_id": "episode-001",
+        "hidden": False,
+    }
+
+    # Convert the dictionary to a V1ActionEvent model
+    v1_action_event = V1ActionEvent(**v1_action_event_data)
+
+    # Use from_v1 method to create an ActionEvent instance
+    action_event = ActionEvent.from_v1(v1_action_event)
+
+    # Save the action event to the database (mocked DB for the test)
+    action_event.save()
+    found_events = ActionEvent.find(id=action_event.id)
+    assert len(found_events) > 0, "Failed to retrieve the action event using find."
+    
+    # Get the first result from the find method
+    found_event = found_events[0]
+
+    # Convert the fetched ActionEvent instance back to JSON using to_v1 and model_dump_json
+    found_v1_action_event = found_event.to_v1()
+    assert found_v1_action_event == action_event.to_v1()
