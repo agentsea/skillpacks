@@ -159,7 +159,7 @@ class ActionEvent(WithDB):
         event.model = v1.model
         event.agent_id = v1.agent_id
         event.episode_id = v1.episode_id
-        event.action_opts = v1.action_opts
+        event.action_opts = v1.action_opts if v1.action_opts else []
         event.reviews = (
             [Review.from_v1(review_v1) for review_v1 in v1.reviews]
             if v1.reviews
@@ -392,7 +392,7 @@ class Episode(WithDB):
         prompt: Optional[Prompt | str] = None,
         result: Optional[Any] = None,
         end_state: Optional[EnvState] = None,
-        action_opts: Optional[List[V1ActionOpt]] = [],
+        action_opts: Optional[List[V1ActionOpt]] = None,
         namespace: str = "default",
         metadata: dict = {},
         owner_id: Optional[str] = None,
