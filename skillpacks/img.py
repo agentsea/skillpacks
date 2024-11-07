@@ -6,7 +6,7 @@ import secrets
 import string
 import tempfile
 from io import BytesIO
-from typing import List
+from typing import List, Sequence
 
 from google.cloud import storage
 from PIL import Image, ImageDraw, ImageFont
@@ -118,7 +118,7 @@ def upload_image_to_gcs(image_data: bytes, mime_type: str) -> str:
     return blob.public_url
 
 
-def convert_images(images: List[str | Image.Image]) -> List[str]:
+def convert_images(images: Sequence[str | Image.Image]) -> List[str]:
     sa = os.getenv(STORAGE_SA_JSON_ENV)
     new_imgs: List[str] = []
     if sa:
