@@ -32,7 +32,7 @@ class EnvState:
     @classmethod
     def from_v1(cls, data: V1EnvState) -> "EnvState":
         out = cls.__new__(cls)
-        out.images = data.images
+        out.images = convert_images(data.images) if data.images else None
         out.coordinates = data.coordinates
         out.video = data.video
         out.text = data.text
