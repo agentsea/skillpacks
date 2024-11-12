@@ -172,6 +172,7 @@ def test_from_v1_and_save():
 
     # Use from_v1 method to create an ActionEvent instance
     action_event = ActionEvent.from_v1(v1_action_event)
+    
     # Save the action event to the database (mocked DB for the test)
     action_event.save()
     found_events = ActionEvent.find(id=action_event.id)
@@ -179,6 +180,7 @@ def test_from_v1_and_save():
     
     # Get the first result from the find method
     found_event = found_events[0]
+
     # Convert the fetched ActionEvent instance back to JSON using to_v1 and model_dump_json
     found_v1_action_event = found_event.to_v1()
     assert found_v1_action_event == action_event.to_v1()
