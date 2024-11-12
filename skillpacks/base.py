@@ -49,6 +49,8 @@ class ActionEvent(WithDB):
         action_opts: Optional[List[V1ActionOpt]] = None,
         hidden: bool = False,
         episode_id: Optional[str] = None,
+        started: Optional[float] = None,
+        ended: Optional[float] = None,
     ) -> None:
         self.id = shortuuid.uuid()
         self.state = state
@@ -60,6 +62,8 @@ class ActionEvent(WithDB):
         self.namespace = namespace
         self.metadata = metadata if metadata else {}
         self.created = time.time()
+        self.started = started if started else time.time()
+        self.ended = ended if ended else time.time()
         self.flagged = flagged
         self.owner_id = owner_id
         self.model = model
@@ -123,6 +127,8 @@ class ActionEvent(WithDB):
             tool=self.tool,
             namespace=self.namespace,
             created=self.created,
+            started=self.started,
+            ended=self.ended,
             flagged=self.flagged,
             model=self.model,
             agent_id=self.agent_id,
@@ -174,6 +180,8 @@ class ActionEvent(WithDB):
             else []
         )
         event.created = v1.created
+        event.started = v1.started
+        event.ended = v1.ended
         event.hidden = v1.hidden
         return event
 
@@ -246,6 +254,8 @@ class ActionEvent(WithDB):
             action_opts=json.dumps([opt.model_dump() for opt in self.action_opts]),
             flagged=self.flagged,
             created=self.created,
+            started=self.started,
+            ended=self.ended,
             owner_id=self.owner_id,
             model=self.model,
             agent_id=self.agent_id,
@@ -291,6 +301,8 @@ class ActionEvent(WithDB):
         event.reviews = reviews
         event.reviewables = reviewables
         event.created = record.created
+        event.started = record.started
+        event.ended = record.ended
         event.episode_id = record.episode_id
         event.hidden = record.hidden
         return event
