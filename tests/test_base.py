@@ -172,12 +172,12 @@ def test_from_v1_and_save():
 
     # Use from_v1 method to create an ActionEvent instance
     action_event = ActionEvent.from_v1(v1_action_event)
-    
+
     # Save the action event to the database (mocked DB for the test)
     action_event.save()
     found_events = ActionEvent.find(id=action_event.id)
     assert len(found_events) > 0, "Failed to retrieve the action event using find."
-    
+
     # Get the first result from the find method
     found_event = found_events[0]
 
