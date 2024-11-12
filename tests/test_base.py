@@ -160,6 +160,8 @@ def test_from_v1_and_save():
         "action_opts": None,
         "agent_id": "agent-123",
         "created": time.time(),
+        "ended": time.time(),
+        "started": time.time(),
         "metadata": {},
         "episode_id": "episode-001",
         "hidden": False,
@@ -175,7 +177,7 @@ def test_from_v1_and_save():
     action_event.save()
     found_events = ActionEvent.find(id=action_event.id)
     assert len(found_events) > 0, "Failed to retrieve the action event using find."
-    
+
     # Get the first result from the find method
     found_event = found_events[0]
 

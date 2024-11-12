@@ -107,6 +107,8 @@ class V1ActionEvent(BaseModel):
     action_opts: Optional[List[V1ActionOpt]] = None
     agent_id: Optional[str] = None
     created: float
+    started: float
+    ended: float
     metadata: dict = {}
     episode_id: Optional[str] = None
     hidden: bool = False

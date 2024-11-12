@@ -82,6 +82,8 @@ class ActionRecord(Base):
     model = Column(String, default=None)
     agent_id = Column(String, default=None)
     created = Column(Float, default=time.time)
+    started = Column(Float, default=time.time)
+    ended = Column(Float, default=time.time)
     hidden = Column(Boolean, default=False)
     action_opts = Column(Text, nullable=True)
 
