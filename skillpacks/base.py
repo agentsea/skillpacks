@@ -38,6 +38,7 @@ class ActionEvent(WithDB):
         prompt: Optional[Prompt] = None,
         result: Optional[Any] = None,
         end_state: Optional[EnvState] = None,
+        event_order: Optional[int] = None,
         namespace: str = "default",
         metadata: Optional[dict] = None,
         flagged: bool = False,
@@ -58,6 +59,7 @@ class ActionEvent(WithDB):
         self.action = action
         self.result = result
         self.end_state = end_state
+        self.event_order = event_order
         self.tool = tool
         self.namespace = namespace
         self.metadata = metadata if metadata else {}
@@ -126,6 +128,7 @@ class ActionEvent(WithDB):
             end_state=self.end_state.to_v1() if self.end_state else None,
             tool=self.tool,
             namespace=self.namespace,
+            event_order=self.event_order,
             created=self.created,
             started=self.started,
             ended=self.ended,
@@ -183,6 +186,7 @@ class ActionEvent(WithDB):
         event.started = v1.started
         event.ended = v1.ended
         event.hidden = v1.hidden
+        event.event_order = v1.event_order
         return event
 
     def save(self) -> None:
@@ -248,6 +252,7 @@ class ActionEvent(WithDB):
             end_state=self.end_state.to_v1().model_dump_json()
             if self.end_state
             else None,
+            event_order=self.event_order,
             tool=self.tool.model_dump_json(),
             namespace=self.namespace,
             metadata_=json.dumps(self.metadata),
@@ -288,6 +293,7 @@ class ActionEvent(WithDB):
             if record.end_state  # type: ignore
             else None
         )  # type: ignore
+        event.event_order = record.event_order
         event.action_opts = [
             V1ActionOpt.model_validate_json(opt)
             for opt in json.loads(record.action_opts)  # type: ignore

@@ -1,6 +1,6 @@
 import time
 
-from sqlalchemy import Column, String, ForeignKey, Text, Boolean, Float, Table
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, Boolean, Float, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -77,7 +77,7 @@ class ActionRecord(Base):
     end_state = Column(Text, nullable=True)
     tool = Column(Text)
     metadata_ = Column(Text, default=dict)
-
+    event_order = Column(Integer, nullable=True)
     flagged = Column(Boolean, default=False)
     model = Column(String, default=None)
     agent_id = Column(String, default=None)

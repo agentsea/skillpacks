@@ -97,6 +97,7 @@ class V1ActionEvent(BaseModel):
     action: V1Action
     result: Any
     end_state: Optional[V1EnvState] = None
+    event_order: Optional[int] = None
     tool: V1ToolRef
     namespace: str
     prompt: Optional[V1Prompt] = None
@@ -120,7 +121,7 @@ class V1ActionEvents(BaseModel):
     events: List[V1ActionEvent] = []
 
 
-class V1CreateActionEvent(BaseModel):
+class V1CreateActionEvent(BaseModel): # out of date, will need to be updated if we want to use it. Right now only in skillpacks server
     """An action that has occurred"""
 
     state: V1EnvState
