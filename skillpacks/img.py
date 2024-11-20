@@ -122,10 +122,8 @@ def convert_images(images: Sequence[str | Image.Image]) -> List[str]:
     sa = os.getenv(STORAGE_SA_JSON_ENV)
     new_imgs: List[str] = []
     if sa:
-        print("convert_images function, proceeding with gcs key path", flush=True)
         for img in images:
             if isinstance(img, Image.Image):
-                print("convert_images function, appending img as b64", flush=True)
                 new_imgs.append(image_to_b64(img))
             elif isinstance(img, str):
                 if img.startswith("data:"):
@@ -135,7 +133,6 @@ def convert_images(images: Sequence[str | Image.Image]) -> List[str]:
                     public_url = upload_image_to_gcs(image_data, mime_type)
                     new_imgs.append(public_url)
                 elif img.startswith("https://"):
-                    print("convert_images function, appending image as is", flush=True)
                     new_imgs.append(img)
                 else:
                     print("convert_images function, uploading img to gcs in else", flush=True)
