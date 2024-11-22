@@ -1,8 +1,8 @@
-import time
-from typing import Dict, Any, Optional, List
 import json
-import shortuuid
+import time
+from typing import Any, Dict, List, Optional
 
+import shortuuid
 from mllm import Prompt
 from sqlalchemy import asc
 
@@ -10,20 +10,20 @@ from .db.conn import WithDB
 from .db.models import (
     ActionRecord,
     EpisodeRecord,
-    ReviewRecord,
     ReviewableRecord,
-)
-from .server.models import (
-    V1ActionEvent,
-    V1ToolRef,
-    V1Action,
-    V1Episode,
-    ReviewerType,
-    V1EnvState,
-    V1ActionOpt,
+    ReviewRecord,
 )
 from .review import Review
-from .reviewable import Reviewable, reviewable_type_map, reviewable_string_map
+from .reviewable import Reviewable, reviewable_string_map, reviewable_type_map
+from .server.models import (
+    ReviewerType,
+    V1Action,
+    V1ActionEvent,
+    V1ActionOpt,
+    V1EnvState,
+    V1Episode,
+    V1ToolRef,
+)
 from .state import EnvState
 
 
@@ -40,13 +40,13 @@ class ActionEvent(WithDB):
         end_state: Optional[EnvState] = None,
         event_order: Optional[int] = None,
         namespace: str = "default",
-        metadata: Optional[dict] = None,
+        metadata: Optional[dict[str, Any]] = None,
         flagged: bool = False,
         owner_id: Optional[str] = None,
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
         reviews: Optional[List[Review]] = None,
-        reviewables: Optional[List[Reviewable]] = None,
+        reviewables: Optional[List[Reviewable[Any, Any]]] = None,
         action_opts: Optional[List[V1ActionOpt]] = None,
         hidden: bool = False,
         episode_id: Optional[str] = None,
@@ -412,7 +412,7 @@ class Episode(WithDB):
         end_state: Optional[EnvState] = None,
         action_opts: Optional[List[V1ActionOpt]] = None,
         namespace: str = "default",
-        metadata: dict = {},
+        metadata: Dict[str, Any] = {},
         owner_id: Optional[str] = None,
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
