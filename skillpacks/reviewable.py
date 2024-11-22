@@ -354,7 +354,7 @@ class AnnotationReviewable(Reviewable[V1AnnotationReviewable, "AnnotationReviewa
         reason: Optional[str] = None,
         reviewer_type: str = ReviewerType.HUMAN.value,
         parent_id: Optional[str] = None,
-        correction: Optional[V1BoundingBox] = None,
+        correction: Optional[str] = None,
     ) -> None:
         self._save_review(
             approved=approved,
@@ -362,8 +362,10 @@ class AnnotationReviewable(Reviewable[V1AnnotationReviewable, "AnnotationReviewa
             reviewer=reviewer,
             reviewer_type=reviewer_type,
             parent_id=parent_id,
-            correction=correction,
-            correction_schema=V1BoundingBox,  # Pass the class type
+            correction=V1AnnotationReviewable(key=self.key, value=correction)
+            if correction
+            else None,
+            correction_schema=V1AnnotationReviewable,  # Pass the class type
         )
 
     @classmethod
@@ -376,11 +378,13 @@ class AnnotationReviewable(Reviewable[V1AnnotationReviewable, "AnnotationReviewa
 
 reviewable_type_map = {
     "BoundingBoxReviewable": BoundingBoxReviewable,
+    "AnnotationReviewable": AnnotationReviewable,
     # "OtherReviewableType": OtherReviewableType,  # Map other Reviewable types here
     # Add more mappings as needed
 }
 
 reviewable_string_map = {
     "BoundingBoxReviewable": "BoundingBoxReviewable",
+    "AnnotationReviewable": "AnnotationReviewable",
     # "OtherReviewableType": "OtherReviewableType"
 }
