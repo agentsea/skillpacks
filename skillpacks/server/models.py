@@ -1,5 +1,5 @@
-from typing import Any, Dict, List, Optional, Tuple
 from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
 from mllm import V1Prompt
 from pydantic import BaseModel, Field
@@ -179,3 +179,10 @@ class V1BoundingBoxReviewable(BaseModel):
     img: str
     target: str
     bbox: V1BoundingBox
+
+
+class V1AnnotationReviewable(BaseModel):
+    """An annotation reviewable"""
+
+    key: str
+    value: str

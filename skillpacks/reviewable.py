@@ -1,23 +1,26 @@
 from __future__ import annotations
-from typing import TypeVar, Optional, Generic, Type, Dict, List
-from abc import ABC, abstractmethod
-import shortuuid
-import time
+
 import json
+import time
+from abc import ABC, abstractmethod
+from typing import Dict, Generic, List, Optional, Type, TypeVar
 
-from pydantic import BaseModel
+import shortuuid
 from PIL import Image
+from pydantic import BaseModel
 
-from skillpacks.db.models import ReviewRecord, ReviewableRecord
 from skillpacks.db.conn import WithDB
+from skillpacks.db.models import ReviewableRecord, ReviewRecord
 from skillpacks.server.models import (
     ReviewerType,
+    V1AnnotationReviewable,
     V1BoundingBox,
     V1BoundingBoxReviewable,
     V1Reviewable,
 )
-from .review import Review
+
 from .img import convert_images
+from .review import Review
 
 ReviewableModel = TypeVar(
     "ReviewableModel", bound="BaseModel"
@@ -55,7 +58,7 @@ class Reviewable(Generic[ReviewableModel, ReviewableType], ABC, WithDB):
         pass
 
     @abstractmethod
-    def post_review(cls, *args, **kwargs) -> None:
+    def post_review(cls, *args, **kwargs) -> None:  # type: ignore
         pass
 
     @classmethod
@@ -73,16 +76,16 @@ class Reviewable(Generic[ReviewableModel, ReviewableType], ABC, WithDB):
             reviewable=self.to_v1().model_dump(),
             reviews=[review.to_v1() for review in self.reviews] if self.reviews else [],
             created=self.created,
-            updated=self.updated
+            updated=self.updated,
         )
 
     @classmethod
     def from_v1Reviewable(cls, v1: V1Reviewable) -> Reviewable:
         """Use this instead of to_v1 to get a standard reviewable"""
-        
+
         # Get the correct class for the reviewable based on its type
         reviewable_class = cls._get_reviewable_class_by_type(v1.type)
-        
+
         if not reviewable_class:
             raise ValueError(f"Invalid reviewable type: {v1.type}")
 
@@ -103,7 +106,7 @@ class Reviewable(Generic[ReviewableModel, ReviewableType], ABC, WithDB):
         )
         reviewable_instance.created = v1.created
         reviewable_instance.updated = v1.updated
-        
+
         # # Print the final reviewable instance before returning
         # print(f"Final reviewable instance (full data): {vars(reviewable_instance)}")
 
@@ -129,7 +132,9 @@ class Reviewable(Generic[ReviewableModel, ReviewableType], ABC, WithDB):
         reviewable_class = cls._get_reviewable_class_by_type((record.type))  # type: ignore
 
         # With the correct subclass, Deserialize the reviewable JSON to a ReviewableModel (like V1BoundingBoxReviewable)
-        reviewable_model = reviewable_class.v1_type().model_validate_json(str(record.reviewable))
+        reviewable_model = reviewable_class.v1_type().model_validate_json(
+            str(record.reviewable)
+        )
 
         # Use the from_v1 method to create the specific ReviewableType instance (like BoundingBoxReviewable)
         instance = reviewable_class.from_v1(reviewable_model)
@@ -180,11 +185,11 @@ class Reviewable(Generic[ReviewableModel, ReviewableType], ABC, WithDB):
 
         if not reviewable_class:
             raise ValueError(f"Invalid reviewable type: {reviewable_type}")
-        
+
         return reviewable_class
 
     @classmethod
-    def find(cls, **kwargs) -> List[ReviewableType]:
+    def find(cls, **kwargs) -> List[ReviewableType]:  # type: ignore
         for db in cls.get_db():
             records = (
                 db.query(ReviewableRecord)
@@ -261,7 +266,9 @@ class Reviewable(Generic[ReviewableModel, ReviewableType], ABC, WithDB):
         self.save()
 
 
-class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable, "BoundingBoxReviewable"]):
+class BoundingBoxReviewable(
+    Reviewable[V1BoundingBoxReviewable, "BoundingBoxReviewable"]
+):
     """Bounding box reviewable"""
 
     def __init__(
@@ -270,9 +277,9 @@ class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable, "BoundingBoxRevi
         target: str,
         bbox: V1BoundingBox,
         metadata: Optional[Dict[str, str]] = None,
-        **kwargs,  # Catch any additional keyword arguments for parent class
+        **kwargs,  # type: ignore # Catch any additional keyword arguments for parent class
     ):
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
         self.img = convert_images([img])[0]
         self.target = target
         self.bbox = bbox
@@ -314,6 +321,56 @@ class BoundingBoxReviewable(Reviewable[V1BoundingBoxReviewable, "BoundingBoxRevi
         out.img = v1.img
         out.target = v1.target
         out.bbox = v1.bbox
+        return out
+
+
+class AnnotationReviewable(Reviewable[V1AnnotationReviewable, "AnnotationReviewable"]):
+    """Annotation reviewable"""
+
+    def __init__(
+        self,
+        key: str,
+        value: str,
+        **kwargs,  # type: ignore # Catch any additional keyword arguments for parent class
+    ):
+        super().__init__(**kwargs)  # type: ignore
+        self.key = key
+        self.value = value
+
+    @classmethod
+    def v1_type(cls) -> Type[V1AnnotationReviewable]:
+        return V1AnnotationReviewable
+
+    def to_v1(self) -> V1AnnotationReviewable:
+        return V1AnnotationReviewable(
+            key=self.key,
+            value=self.value,
+        )
+
+    def post_review(
+        self,
+        reviewer: str,
+        approved: bool,
+        reason: Optional[str] = None,
+        reviewer_type: str = ReviewerType.HUMAN.value,
+        parent_id: Optional[str] = None,
+        correction: Optional[V1BoundingBox] = None,
+    ) -> None:
+        self._save_review(
+            approved=approved,
+            reason=reason,
+            reviewer=reviewer,
+            reviewer_type=reviewer_type,
+            parent_id=parent_id,
+            correction=correction,
+            correction_schema=V1BoundingBox,  # Pass the class type
+        )
+
+    @classmethod
+    def from_v1(cls, v1: V1AnnotationReviewable) -> AnnotationReviewable:
+        out = cls.__new__(cls)
+        out.key = v1.key
+        out.value = v1.value
         return out
 
 
