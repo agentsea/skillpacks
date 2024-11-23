@@ -121,7 +121,9 @@ class V1ActionEvents(BaseModel):
     events: List[V1ActionEvent] = []
 
 
-class V1CreateActionEvent(BaseModel): # out of date, will need to be updated if we want to use it. Right now only in skillpacks server
+class V1CreateActionEvent(
+    BaseModel
+):  # out of date, will need to be updated if we want to use it. Right now only in skillpacks server
     """An action that has occurred"""
 
     state: V1EnvState
@@ -176,6 +178,7 @@ class V1BoundingBox(BaseModel):
 class V1BoundingBoxReviewable(BaseModel):
     """A bounding box"""
 
+    type: str = "BoundingBoxReviewable"
     img: str
     target: str
     bbox: V1BoundingBox
@@ -184,5 +187,8 @@ class V1BoundingBoxReviewable(BaseModel):
 class V1AnnotationReviewable(BaseModel):
     """An annotation reviewable"""
 
+    type: str = "AnnotationReviewable"
     key: str
     value: str
+    annotator: Optional[str] = None
+    annotator_type: str = ReviewerType.AGENT.value

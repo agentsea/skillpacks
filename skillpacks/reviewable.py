@@ -331,11 +331,15 @@ class AnnotationReviewable(Reviewable[V1AnnotationReviewable, "AnnotationReviewa
         self,
         key: str,
         value: str,
+        annotator: Optional[str] = None,
+        annotator_type: str = ReviewerType.AGENT.value,
         **kwargs,  # type: ignore # Catch any additional keyword arguments for parent class
     ):
         super().__init__(**kwargs)  # type: ignore
         self.key = key
         self.value = value
+        self.annotator = annotator
+        self.annotator_type = annotator_type
 
     @classmethod
     def v1_type(cls) -> Type[V1AnnotationReviewable]:
@@ -345,6 +349,8 @@ class AnnotationReviewable(Reviewable[V1AnnotationReviewable, "AnnotationReviewa
         return V1AnnotationReviewable(
             key=self.key,
             value=self.value,
+            annotator=self.annotator,
+            annotator_type=self.annotator_type,
         )
 
     def post_review(
@@ -373,6 +379,8 @@ class AnnotationReviewable(Reviewable[V1AnnotationReviewable, "AnnotationReviewa
         out = cls.__new__(cls)
         out.key = v1.key
         out.value = v1.value
+        out.annotator = v1.annotator
+        out.annotator_type = v1.annotator_type
         return out
 
 
