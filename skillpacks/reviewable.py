@@ -333,9 +333,10 @@ class AnnotationReviewable(Reviewable[V1AnnotationReviewable, "AnnotationReviewa
         value: str,
         annotator: Optional[str] = None,
         annotator_type: str = ReviewerType.AGENT.value,
-        **kwargs,  # type: ignore # Catch any additional keyword arguments for parent class
+        action_id: Optional[str] = None,
+        **kwargs,  # type: ignore
     ):
-        super().__init__(**kwargs)  # type: ignore
+        super().__init__(resource_type="ActionEvent", resource_id=action_id or "")  # type: ignore
         self.key = key
         self.value = value
         self.annotator = annotator
