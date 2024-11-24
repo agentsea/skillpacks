@@ -1,12 +1,12 @@
-from typing import Optional, List, Type
-import shortuuid
-import time
 import json
+import time
+from typing import List, Optional, Type
 
+import shortuuid
 from pydantic import BaseModel
 
-from skillpacks.db.models import ReviewRecord
 from skillpacks.db.conn import WithDB
+from skillpacks.db.models import ReviewRecord
 from skillpacks.server.models import ReviewerType, V1Review
 
 
@@ -132,7 +132,9 @@ class Review(WithDB):
             json.loads(record.with_resources) if record.with_resources else []  # type: ignore
         )
         review.correction = record.correction
-        review.correction_schema = record.correction_schema
+        review.correction_schema = (
+            json.loads(record.correction_schema) if record.correction_schema else None
+        )
         review.created = record.created
         review.updated = record.updated
         return review
