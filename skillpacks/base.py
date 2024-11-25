@@ -526,6 +526,22 @@ class Episode(WithDB):
             else:
                 raise ValueError("Episode record not found")
 
+    def delete_all_actions(self) -> None:
+        """Deletes all actions associated with this episode from the database."""
+        for db in self.get_db():
+            # Retrieve all action records associated with this episode
+            action_records = (
+                db.query(ActionRecord).filter(ActionRecord.episode_id == self.id).all()
+            )
+            # Delete each action and its associated data
+            for action_record in action_records:
+                action = ActionEvent.from_record(action_record)
+                action.delete()
+            db.commit()
+        # Clear the actions list in memory
+        self.actions = []
+        self.save()
+
     def fail_one(
         self,
         event_id: str,
