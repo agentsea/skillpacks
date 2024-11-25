@@ -582,9 +582,12 @@ class Episode(WithDB):
         self,
         reviewer: str,
         reviewer_type: str = ReviewerType.HUMAN.value,
+        approve_hidden: bool = False,
     ) -> None:
         """Approve all actions in the episode."""
         for event in self.actions:
+            if event.hidden and not approve_hidden:
+                continue
             event.post_review(
                 reviewer=reviewer,
                 reviewer_type=reviewer_type,
@@ -596,9 +599,12 @@ class Episode(WithDB):
         self,
         reviewer: str,
         reviewer_type: str = ReviewerType.HUMAN.value,
+        fail_hidden: bool = False,
     ) -> None:
         """Fail all actions in the episode."""
         for event in self.actions:
+            if event.hidden and not fail_hidden:
+                continue
             event.post_review(
                 reviewer=reviewer,
                 reviewer_type=reviewer_type,
@@ -611,6 +617,7 @@ class Episode(WithDB):
         event_id: str,
         reviewer: str,
         reviewer_type: str = ReviewerType.HUMAN.value,
+        approve_hidden: bool = False,
     ) -> None:
         """Approve the given event and all prior actions."""
         # Find the index of the target event
@@ -625,7 +632,10 @@ class Episode(WithDB):
 
         # Approve the target event and all prior events
         for i in range(target_index + 1):
-            self.actions[i].post_review(
+            event = self.actions[i]
+            if event.hidden and not approve_hidden:
+                continue
+            event.post_review(
                 reviewer=reviewer,
                 reviewer_type=reviewer_type,
                 approved=True,
@@ -638,6 +648,7 @@ class Episode(WithDB):
         event_id: str,
         reviewer: str,
         reviewer_type: str = ReviewerType.HUMAN.value,
+        fail_hidden: bool = False,
     ) -> None:
         """Fail the given event and all prior actions."""
         # Find the index of the target event
@@ -652,7 +663,10 @@ class Episode(WithDB):
 
         # Fail the target event and all prior events
         for i in range(target_index + 1):
-            self.actions[i].post_review(
+            event = self.actions[i]
+            if event.hidden and not fail_hidden:
+                continue
+            event.post_review(
                 reviewer=reviewer,
                 reviewer_type=reviewer_type,
                 approved=False,
