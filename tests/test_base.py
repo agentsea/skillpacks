@@ -1,12 +1,14 @@
 import json
 import time
+from typing import List
+
 import pytest
-from mllm import Prompt, RoleThread, RoleMessage
-from skillpacks import Episode, ActionEvent, V1Action, EnvState
+from mllm import Prompt, RoleMessage, RoleThread
+from toolfuse.models import V1ToolRef
+
+from skillpacks import ActionEvent, EnvState, Episode, V1Action
 from skillpacks.db.models import ActionRecord
 from skillpacks.server.models import V1ActionEvent
-from toolfuse.models import V1ToolRef
-from typing import List
 
 
 def create_episode_with_events(num_events: int = 3) -> Episode:
@@ -27,7 +29,7 @@ def create_episode_with_events(num_events: int = 3) -> Episode:
         )
     event = ActionEvent(
         EnvState(images=[f"https://example.com/image99.png"]),
-        V1Action(name=f"action_{i}", parameters={"param": f"value_99"}), # type: ignore
+        V1Action(name=f"action_{i}", parameters={"param": f"value_99"}),  # type: ignore
         V1ToolRef(module="test_module", type="TestType", version="0.1.0"),
         prompt=prompt,
     )
@@ -129,6 +131,7 @@ def test_fail_prior():
         else:
             assert len(event.reviews) == 0
 
+
 def test_from_v1_and_save():
     # Create a sample V1ActionEvent JSON
     v1_action_event_data = {
@@ -184,3 +187,28 @@ def test_from_v1_and_save():
     # Convert the fetched ActionEvent instance back to JSON using to_v1 and model_dump_json
     found_v1_action_event = found_event.to_v1()
     assert found_v1_action_event == action_event.to_v1()
+
+
+def test_delete_all_actions():
+    # Create an episode with some events
+    episode = create_episode_with_events(num_events=3)
+    initial_action_count = len(episode.actions)
+    assert (
+        initial_action_count == 4
+    )  # 3 events + 1 extra event in create_episode_with_events
+
+    # Store action IDs for verification after deletion
+    action_ids = [action.id for action in episode.actions]
+
+    # Delete all actions from the episode
+    episode.delete_all_actions()
+
+    # Assert that the in-memory actions list is empty
+    assert len(episode.actions) == 0, "Episode actions list was not cleared"
+
+    # Check that the actions are deleted from the database
+    for action_id in action_ids:
+        found_actions = ActionEvent.find(id=action_id)
+        assert (
+            len(found_actions) == 0
+        ), f"Action {action_id} was not deleted from the database"
