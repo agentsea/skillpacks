@@ -84,9 +84,13 @@ class V1Reviewable(BaseModel):
 
 class V1ActionOpt(BaseModel):
     """An action that could have occurred"""
-
+    id: str
     action: Optional[V1Action] = None
     prompt: Optional[V1Prompt] = None
+    reviews: List[V1Review] = []
+    action_id: Optional[str] = None
+    created: float
+    updated: Optional[float] = None
 
 
 class V1ActionEvent(BaseModel):

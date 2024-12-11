@@ -13,6 +13,13 @@ action_reviews = Table(
     Column("review_id", String, ForeignKey("reviews.id")),
 )
 
+action_opt_reviews = Table(
+    "action_opt_reviews",
+    Base.metadata,
+    Column("action_id", String, ForeignKey("action_opts.id")),
+    Column("review_id", String, ForeignKey("reviews.id")),
+)
+
 reviewable_reviews = Table(
     "reviewable_reviews",
     Base.metadata,
@@ -63,6 +70,23 @@ class ReviewRecord(Base):
     updated = Column(Float, nullable=True)
     parent_id = Column(String, ForeignKey("reviews.id"), nullable=True)
 
+class ActionOptRecord(Base):
+    __tablename__ = "action_opts"
+    id = Column(String, primary_key=True)
+    action = Column(Text)
+    prompt_id = Column(String, nullable=True)
+    created = Column(Float, default=time.time)
+    updated = Column(Float, nullable=True)
+    reviews = relationship(
+        "ReviewRecord",
+        secondary=action_opt_reviews,
+        lazy="dynamic",  # or 'select', depending on your preference
+        # cascade="all, delete", try this later
+    )
+    action_id = Column(String, ForeignKey("actions.id"))
+
+    # Many-to-one relationship with ActionRecord
+    action_record = relationship("ActionRecord", back_populates="action_opts")
 
 class ActionRecord(Base):
     __tablename__ = "actions"
@@ -85,8 +109,8 @@ class ActionRecord(Base):
     started = Column(Float, default=time.time)
     ended = Column(Float, default=time.time)
     hidden = Column(Boolean, default=False)
-    action_opts = Column(Text, nullable=True)
-
+    # One-to-many relationship with ActionOptRecord
+    action_opts = relationship("ActionOptRecord", back_populates="action_record")
     episode_id = Column(String, ForeignKey("episodes.id"), nullable=True)
     episode = relationship("EpisodeRecord", back_populates="actions")
     reviewables = relationship(

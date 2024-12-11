@@ -11,7 +11,7 @@ class EnvState:
 
     def __init__(
         self,
-        images: Optional[List[str | Image.Image]] = None,
+        images: Optional[List[str | Image.Image | None]] = None,
         coordinates: Optional[Tuple[int, int]] = None,
         video: Optional[str] = None,
         text: Optional[str] = None,

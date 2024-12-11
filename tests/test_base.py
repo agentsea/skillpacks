@@ -7,9 +7,9 @@ from mllm import Prompt, RoleMessage, RoleThread
 from toolfuse.models import V1ToolRef
 
 from skillpacks import ActionEvent, EnvState, Episode, V1Action
-from skillpacks.db.models import ActionRecord
 from skillpacks.server.models import V1ActionEvent
-
+from skillpacks.action_opts import ActionOpt
+from skillpacks.review import Review
 
 def create_episode_with_events(num_events: int = 3) -> Episode:
     thread = RoleThread()
@@ -196,10 +196,14 @@ def test_delete_all_actions():
     assert (
         initial_action_count == 4
     )  # 3 events + 1 extra event in create_episode_with_events
-
+    episode.approve_all(reviewer="test@example.com", reviewer_type="human")
+    # print([action for action in episode.to_v1().actions])
     # Store action IDs for verification after deletion
     action_ids = [action.id for action in episode.actions]
-
+    # Check that the actions are in the database
+    for action_id in action_ids:
+        found_actions = ActionEvent.find(id=action_id)
+        print([vars(action) for action in found_actions])
     # Delete all actions from the episode
     episode.delete_all_actions()
 
@@ -212,3 +216,90 @@ def test_delete_all_actions():
         assert (
             len(found_actions) == 0
         ), f"Action {action_id} was not deleted from the database"
+
+def test_action_event_with_opts_and_reviews():
+    # Create ActionEvent with ActionOpts
+    state = EnvState(text="Initial state of the environment")
+    tool = V1ToolRef(module="tool_module", type="tool_type", version="1.0")
+
+    owner_id = "owner123"
+
+    action = V1Action(name="test_action", parameters={"param1": "value1"})
+    action_event = ActionEvent(
+        state=state,
+        action=action,
+        tool=tool,
+        namespace="default",
+        owner_id=owner_id,
+    )
+
+    action_event.add_actionOpt(action=V1Action(name="opt1", parameters={"key1": "val1"}))
+    action_event.add_actionOpt(action=V1Action(name="opt2", parameters={"key2": "val2"}))
+
+    # Step 3: Fetch the ActionEvent using the find method with owner_id and verify ActionOpts load correctly
+    found_actions = ActionEvent.find(id=action_event.id)
+    assert len(found_actions) == 1
+
+    found_action_event = found_actions[0]
+    assert found_action_event.id == action_event.id
+    assert len(found_action_event.action_opts) == 2
+    print("ActionEvent and ActionOpts saved and loaded correctly.")
+
+    # Step 4: Use ActionOpt find method to retrieve ActionOpts from the database by action_id
+    found_action_opts = ActionOpt.find(action_id=action_event.id)
+    assert len(found_action_opts) == 2
+    print("ActionOpts found in the database.")
+
+    # Step 5: Add Reviews to the ActionOpts
+    review1 = Review(
+        reviewer="user1",
+        approved=True,
+        resource_type="action_opt",
+        resource_id=found_action_opts[0].id,
+        reason="Looks good",
+    )
+
+    review2 = Review(
+        reviewer="user2",
+        approved=False,
+        resource_type="action_opt",
+        resource_id=found_action_opts[1].id,
+        reason="Needs improvement",
+    )
+
+    # Add reviews to the ActionOpts
+    found_action_opts[0].reviews.append(review1)
+    found_action_opts[1].reviews.append(review2)
+
+    # Step 6: Save ActionOpts with Reviews
+    for action_opt in found_action_opts:
+        action_opt.save()
+
+    print("Reviews added and saved correctly to ActionOpts.")
+
+    # Step 7: Use ActionOpt find method again to verify ActionOpts and Reviews load correctly
+    found_action_opts_with_reviews = ActionOpt.find(action_id=action_event.id)
+    assert len(found_action_opts_with_reviews[0].reviews) == 1
+    assert found_action_opts_with_reviews[0].reviews[0].reviewer == "user1"
+    assert found_action_opts_with_reviews[1].reviews[0].reviewer == "user2"
+    print("ActionOpts and Reviews loaded correctly.")
+
+    # Step 8: Use ActionEvent find method to verify Action, ActionOpts, and Reviews all load correctly
+    final_found_actions = ActionEvent.find(owner_id=owner_id)
+    assert len(final_found_actions) == 1
+
+    final_action_event = final_found_actions[0]
+    assert len(final_action_event.action_opts) == 2
+
+    opt1 = final_action_event.action_opts[0]
+    opt2 = final_action_event.action_opts[1]
+
+    assert len(opt1.reviews) == 1
+    assert opt1.reviews[0].reviewer == "user1"
+    assert opt1.reviews[0].reason == "Looks good"
+
+    assert len(opt2.reviews) == 1
+    assert opt2.reviews[0].reviewer == "user2"
+    assert opt2.reviews[0].reason == "Needs improvement"
+
+    print("Final check: Action, ActionOpts, and Reviews all loaded correctly.")
