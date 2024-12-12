@@ -32,6 +32,28 @@ class V1Review(BaseModel):
     updated: Optional[float] = None
 
 
+class V1Rating(BaseModel):
+    """A review of an agent action"""
+
+    id: str
+    reviewer: str
+    rating: int
+    reviewer_type: str = ReviewerType.HUMAN.value
+    rating_upper_bound: int = 5
+    rating_lower_bound: int = 1
+    reason: Optional[str] = None
+    resource_type: str
+    resource_id: Optional[str] = None
+    with_resources: Optional[List[str]] = Field(
+        default=None,
+        description="A list of resource IDs of resource_type (EX. Action, Task) that the resource_id was mass reviewed with.",
+    )
+    parent_id: Optional[str] = None
+    correction: Optional[str] = None
+    correction_schema: Optional[Dict[str, Any]] = None
+    created: float
+    updated: Optional[float] = None
+
 class V1Action(BaseModel):
     """An action on a tool"""
 
@@ -84,9 +106,13 @@ class V1Reviewable(BaseModel):
 
 class V1ActionOpt(BaseModel):
     """An action that could have occurred"""
-
+    id: str
     action: Optional[V1Action] = None
     prompt: Optional[V1Prompt] = None
+    ratings: List[V1Rating] = []
+    action_id: Optional[str] = None
+    created: float
+    updated: Optional[float] = None
 
 
 class V1ActionEvent(BaseModel):

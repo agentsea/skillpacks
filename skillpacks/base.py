@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Optional
 
 import shortuuid
 from mllm import Prompt
+from skillpacks.action_opts import ActionOpt
+from skillpacks.rating import Rating
 from sqlalchemy import asc
 
 from .db.conn import WithDB
@@ -47,7 +49,7 @@ class ActionEvent(WithDB):
         agent_id: Optional[str] = None,
         reviews: Optional[List[Review]] = None,
         reviewables: Optional[List[Reviewable[Any, Any]]] = None,
-        action_opts: Optional[List[V1ActionOpt]] = None,
+        action_opts: Optional[List[ActionOpt]] = None,
         hidden: bool = False,
         episode_id: Optional[str] = None,
         started: Optional[float] = None,
@@ -75,6 +77,29 @@ class ActionEvent(WithDB):
         self.action_opts = action_opts or []
         self.hidden = hidden
         self.episode_id = episode_id
+
+        # Set action_id for each ActionOpt
+        for action_opt in self.action_opts:
+            action_opt.action_id = self.id
+
+    def add_actionOpt(
+        self,
+        action: V1Action,
+        prompt: Optional[Prompt] = None,
+        ratings: List[Rating] = [],
+        created: Optional[float] = None,
+        updated: Optional[float] = None,
+    ) -> None:
+        actionOpt = ActionOpt(
+            action=action,
+            prompt=prompt,
+            ratings=ratings,
+            created=created,
+            updated=updated,
+            action_id=self.id,
+        )
+        self.action_opts.append(actionOpt)
+        self.save()
 
     def post_review(
         self,
@@ -136,7 +161,7 @@ class ActionEvent(WithDB):
             model=self.model,
             agent_id=self.agent_id,
             metadata=self.metadata,
-            action_opts=self.action_opts,
+            action_opts=[actionOpt.to_v1() for actionOpt in self.action_opts],
             reviews=[review.to_v1() for review in self.reviews] if self.reviews else [],
             reviewables=[
                 reviewable.to_v1Reviewable() for reviewable in self.reviewables
@@ -168,7 +193,10 @@ class ActionEvent(WithDB):
         event.model = v1.model
         event.agent_id = v1.agent_id
         event.episode_id = v1.episode_id
-        event.action_opts = v1.action_opts if v1.action_opts else []
+        event.action_opts = (
+            [ActionOpt.from_v1(actionOpt_v1) for actionOpt_v1 in v1.action_opts]
+            if v1.action_opts else []
+        )
         event.reviews = (
             [Review.from_v1(review_v1) for review_v1 in v1.reviews]
             if v1.reviews
@@ -235,6 +263,19 @@ class ActionEvent(WithDB):
                     db.query(ReviewableRecord).filter_by(id=reviewable.id).first()
                     for reviewable in self.reviewables
                 ]
+
+            # After committing the action, associate the action_opts
+            if self.action_opts:
+                for action_opt in self.action_opts:
+                    action_opt.action_id = self.id
+                    action_opt.save()
+                # Refresh the record to get the latest state
+                record = (
+                    db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
+                )
+                if not record:
+                    raise ValueError(f"ActionRecord with id {self.id} not found")
+
             db.commit()
 
     def to_record(self) -> ActionRecord:
@@ -256,7 +297,6 @@ class ActionEvent(WithDB):
             tool=self.tool.model_dump_json(),
             namespace=self.namespace,
             metadata_=json.dumps(self.metadata),
-            action_opts=json.dumps([opt.model_dump() for opt in self.action_opts]),
             flagged=self.flagged,
             created=self.created,
             started=self.started,
@@ -279,6 +319,11 @@ class ActionEvent(WithDB):
             Reviewable.from_record(reviewable_record)
             for reviewable_record in record.reviewables
         ]
+        # Load action_opts associated with the action
+        action_opts = [
+            ActionOpt.from_record(action_opt_record)
+            for action_opt_record in record.action_opts
+        ]
         event.id = record.id
         event.state = EnvState.from_v1(V1EnvState.model_validate_json(record.state))  # type: ignore
         event.action = V1Action.model_validate_json(record.action)  # type: ignore
@@ -294,10 +339,7 @@ class ActionEvent(WithDB):
             else None
         )  # type: ignore
         event.event_order = record.event_order
-        event.action_opts = [
-            V1ActionOpt.model_validate_json(opt)
-            for opt in json.loads(record.action_opts)  # type: ignore
-        ]
+        event.action_opts = action_opts
         event.namespace = record.namespace
         event.metadata = json.loads(record.metadata_)  # type: ignore
         event.flagged = record.flagged
@@ -410,12 +452,13 @@ class Episode(WithDB):
         prompt: Optional[Prompt | str] = None,
         result: Optional[Any] = None,
         end_state: Optional[EnvState] = None,
-        action_opts: Optional[List[V1ActionOpt]] = None,
+        action_opts: Optional[List[ActionOpt]] = None,
         namespace: str = "default",
         metadata: Dict[str, Any] = {},
         owner_id: Optional[str] = None,
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
+        reviews: Optional[List[Review]] = None,
     ) -> ActionEvent:
         """Records an action to the episode."""
         if isinstance(prompt, str):
@@ -434,6 +477,7 @@ class Episode(WithDB):
             owner_id=owner_id,
             model=model,
             agent_id=agent_id,
+            reviews=reviews,
             episode_id=self.id,
         )
         self.record_event(event)
