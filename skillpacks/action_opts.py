@@ -1,25 +1,23 @@
-import json
 import time
-from typing import List, Optional, Type
+from typing import List, Optional
 from mllm import Prompt
 import shortuuid
-from pydantic import BaseModel
-from .review import Review
+from skillpacks.rating import Rating
 from skillpacks.db.conn import WithDB
-from skillpacks.db.models import ActionOptRecord, ReviewRecord
+from skillpacks.db.models import ActionOptRecord, RatingRecord
 from .server.models import (
     V1Action,
     V1ActionOpt,
 )
 
 class ActionOpt(WithDB):
-    """A review of an agent action or task"""
+    """A option to an agent action or task"""
 
     def __init__(
         self,
         action: V1Action,
         prompt: Optional[Prompt] = None,
-        reviews: Optional[List[Review]] = None,
+        ratings: Optional[List[Rating]] = None,
         action_id: Optional[str] = None,
         created: Optional[float] = None,
         updated: Optional[float] = None,
@@ -27,7 +25,7 @@ class ActionOpt(WithDB):
         self.id = str(shortuuid.uuid())
         self.prompt = prompt
         self.action = action
-        self.reviews = reviews or []
+        self.ratings = ratings or []
         self.action_id = action_id  # Link to the ActionRecord's ID
         self.created = created or time.time()
         self.updated = updated or time.time()
@@ -37,7 +35,7 @@ class ActionOpt(WithDB):
             id=self.id,
             prompt=self.prompt.to_v1() if self.prompt else None,
             action=self.action,
-            reviews=[review.to_v1() for review in self.reviews] if self.reviews else [],
+            ratings=[rating.to_v1() for rating in self.ratings] if self.ratings else [],
             created=self.created,
             updated=self.updated,
         )
@@ -50,9 +48,9 @@ class ActionOpt(WithDB):
         actionOpt.prompt = (
                     Prompt.from_v1(v1.prompt) if v1.prompt else None
                 )  # Replace Prompt with your actual class
-        actionOpt.reviews = (
-                    [Review.from_v1(review_v1) for review_v1 in v1.reviews]
-                    if v1.reviews
+        actionOpt.ratings = (
+                    [Rating.from_v1(rating_v1) for rating_v1 in v1.ratings]
+                    if v1.ratings
                     else []
                 )
         actionOpt.created = v1.created
@@ -60,18 +58,18 @@ class ActionOpt(WithDB):
         return actionOpt
 
     def save(self) -> None:
-        """Saves the review to the database."""
+        """Saves the action opt to the database."""
         for db in self.get_db():
             record = self.to_record()
             db.merge(record)
             db.commit()
 
-        # After committing the action, associate the reviews
-            if self.reviews:
-                for review in self.reviews:
-                    if not review.resource_id:
-                        review.resource_id = self.id
-                    review.save()
+        # After committing the action opt, associate the ratings
+            if self.ratings:
+                for rating in self.ratings:
+                    if not rating.resource_id:
+                        rating.resource_id = self.id
+                    rating.save()
                 # Refresh the record to get the latest state
                 record = (
                     db.query(ActionOptRecord).filter(ActionOptRecord.id == self.id).first()
@@ -79,26 +77,26 @@ class ActionOpt(WithDB):
 
                 if not record:
                     raise ValueError(f"ActionRecord with id {self.id} not found")
-                # Associate the reviews with the action via the association table
-                record.reviews = [
-                    db.query(ReviewRecord).filter_by(id=review.id).first()
-                    for review in self.reviews
+                # Associate the ratings with the action via the association table
+                record.ratings = [
+                    db.query(RatingRecord).filter_by(id=rating.id).first()
+                    for rating in self.ratings
                 ]
             db.commit()
 
 
     def delete(self) -> None:
-        """Deletes the review from the database."""
+        """Deletes the Action Opt from the database."""
         for db in self.get_db():
             record = db.query(ActionOptRecord).filter(ActionOptRecord.id == self.id).first()
             if record:
                 db.delete(record)
                 db.commit()
             else:
-                raise ValueError("Review not found")
+                raise ValueError("Rating not found")
 
     def to_record(self) -> ActionOptRecord:
-        """Converts the review to a database record."""
+        """Converts the Action Opt to a database record."""
         prompt_id = None
         if self.prompt:
             prompt_id = self.prompt.id
@@ -114,17 +112,17 @@ class ActionOpt(WithDB):
 
     @classmethod
     def from_record(cls, record: ActionOptRecord) -> "ActionOpt":
-        """Creates a review instance from a database record."""
+        """Creates a Action Opt instance from a database record."""
         actionOpt = cls.__new__(cls)
         actionOpt.id = record.id
-        reviews = [
-            Review.from_record(review_record) for review_record in record.reviews
+        ratings = [
+            Rating.from_record(rating_record) for rating_record in record.ratings
         ]
         actionOpt.action = V1Action.model_validate_json(record.action)  # type: ignore
         actionOpt.prompt = (
                     Prompt.find(id=record.prompt_id)[0] if record.prompt_id else None  # type: ignore
                 )  # Replace Prompt with your actual class
-        actionOpt.reviews = reviews
+        actionOpt.ratings = ratings
         actionOpt.action_id = record.action_id
         actionOpt.created = record.created
         actionOpt.updated = record.updated
@@ -132,7 +130,7 @@ class ActionOpt(WithDB):
 
     @classmethod
     def find(cls, **kwargs) -> List["ActionOpt"]:
-        """Finds reviews in the database based on provided filters."""
+        """Finds Action Opts in the database based on provided filters."""
         for db in cls.get_db():
             records = db.query(ActionOptRecord).filter_by(**kwargs).all()
             return [cls.from_record(record) for record in records]

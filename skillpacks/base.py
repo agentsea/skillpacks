@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 import shortuuid
 from mllm import Prompt
 from skillpacks.action_opts import ActionOpt
+from skillpacks.rating import Rating
 from sqlalchemy import asc
 
 from .db.conn import WithDB
@@ -85,14 +86,14 @@ class ActionEvent(WithDB):
         self,
         action: V1Action,
         prompt: Optional[Prompt] = None,
-        reviews: List[Review] = [],
+        ratings: List[Rating] = [],
         created: Optional[float] = None,
         updated: Optional[float] = None,
     ) -> None:
         actionOpt = ActionOpt(
             action=action,
             prompt=prompt,
-            reviews=reviews,
+            ratings=ratings,
             created=created,
             updated=updated,
             action_id=self.id,

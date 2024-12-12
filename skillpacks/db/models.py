@@ -13,11 +13,11 @@ action_reviews = Table(
     Column("review_id", String, ForeignKey("reviews.id")),
 )
 
-action_opt_reviews = Table(
-    "action_opt_reviews",
+action_opt_ratings = Table(
+    "action_opt_ratings",
     Base.metadata,
     Column("action_id", String, ForeignKey("action_opts.id")),
-    Column("review_id", String, ForeignKey("reviews.id")),
+    Column("rating_id", String, ForeignKey("ratings.id")),
 )
 
 reviewable_reviews = Table(
@@ -70,6 +70,23 @@ class ReviewRecord(Base):
     updated = Column(Float, nullable=True)
     parent_id = Column(String, ForeignKey("reviews.id"), nullable=True)
 
+class RatingRecord(Base):
+    __tablename__ = "ratings"
+
+    id = Column(String, primary_key=True)
+    reviewer = Column(String, nullable=False)
+    rating = Column(Integer, nullable=True)
+    reviewer_type = Column(String, default="human")
+    reason = Column(Text, nullable=True)
+    resource_type = Column(String, nullable=True)
+    resource_id = Column(String, nullable=True)
+    with_resources = Column(String, nullable=True)
+    correction = Column(String, nullable=True)
+    correction_schema = Column(String, nullable=True)
+    created = Column(Float, default=time.time)
+    updated = Column(Float, nullable=True)
+    parent_id = Column(String, ForeignKey("ratings.id"), nullable=True)
+
 class ActionOptRecord(Base):
     __tablename__ = "action_opts"
     id = Column(String, primary_key=True)
@@ -77,9 +94,9 @@ class ActionOptRecord(Base):
     prompt_id = Column(String, nullable=True)
     created = Column(Float, default=time.time)
     updated = Column(Float, nullable=True)
-    reviews = relationship(
-        "ReviewRecord",
-        secondary=action_opt_reviews,
+    ratings = relationship(
+        "RatingRecord",
+        secondary=action_opt_ratings,
         lazy="dynamic",  # or 'select', depending on your preference
         # cascade="all, delete", try this later
     )
