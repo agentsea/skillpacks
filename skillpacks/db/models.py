@@ -75,7 +75,9 @@ class RatingRecord(Base):
 
     id = Column(String, primary_key=True)
     reviewer = Column(String, nullable=False)
-    rating = Column(Integer, nullable=True)
+    rating = Column(Integer, nullable=False)
+    rating_upper_bound = Column(Integer, nullable=False)
+    rating_lower_bound = Column(Integer, nullable=False)
     reviewer_type = Column(String, default="human")
     reason = Column(Text, nullable=True)
     resource_type = Column(String, nullable=True)

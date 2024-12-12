@@ -18,6 +18,8 @@ class Rating(WithDB):
         reviewer: str,
         rating: int,
         resource_type: str,
+        rating_upper_bound: int = 5,
+        rating_lower_bound: int = 0,
         resource_id: Optional[str] = None,
         with_resources: Optional[List[str]] = [],
         reviewer_type: str = ReviewerType.HUMAN.value,
@@ -31,6 +33,10 @@ class Rating(WithDB):
         self.id = str(shortuuid.uuid())
         self.reviewer = reviewer
         self.rating = rating
+        if rating > rating_upper_bound or rating < rating_lower_bound:
+            raise ValueError(f"Rating: {rating} not compatible with rating_upperbound {rating_upper_bound} and rating_lower_bound {rating_lower_bound}")
+        self.rating_upper_bound = rating_upper_bound
+        self.rating_lower_bound = rating_lower_bound
         self.reviewer_type = reviewer_type
         self.reason = reason
         self.parent_id = parent_id
@@ -49,6 +55,8 @@ class Rating(WithDB):
             id=self.id,
             reviewer=self.reviewer,
             rating=self.rating,
+            rating_upper_bound=self.rating_upper_bound,
+            rating_lower_bound=self.rating_lower_bound,
             reviewer_type=self.reviewer_type,
             reason=self.reason,
             parent_id=self.parent_id,
@@ -67,6 +75,8 @@ class Rating(WithDB):
         rating.id = v1.id
         rating.reviewer = v1.reviewer
         rating.rating = v1.rating
+        rating.rating_upper_bound=v1.rating_upper_bound
+        rating.rating_lower_bound=v1.rating_lower_bound
         rating.reviewer_type = v1.reviewer_type
         rating.reason = v1.reason
         rating.parent_id = v1.parent_id
@@ -103,6 +113,8 @@ class Rating(WithDB):
             rating=self.rating,
             reviewer=self.reviewer,
             reviewer_type=self.reviewer_type,
+            rating_upper_bound=self.rating_upper_bound,
+            rating_lower_bound=self.rating_lower_bound,
             reason=self.reason,
             resource_type=self.resource_type,
             resource_id=self.resource_id,
@@ -124,6 +136,8 @@ class Rating(WithDB):
         rating.reviewer = record.reviewer
         rating.reviewer_type = record.reviewer_type
         rating.rating = record.rating
+        rating.rating_upper_bound=record.rating_upper_bound,
+        rating.rating_lower_bound=record.rating_lower_bound,
         rating.reason = record.reason
         rating.parent_id = record.parent_id
         rating.resource_type = record.resource_type
