@@ -40,7 +40,7 @@ class V1Rating(BaseModel):
     rating: int
     reviewer_type: str = ReviewerType.HUMAN.value
     rating_upper_bound: int = 5
-    rating_lower_bound: int = 0
+    rating_lower_bound: int = 1
     reason: Optional[str] = None
     resource_type: str
     resource_id: Optional[str] = None

@@ -19,7 +19,7 @@ class Rating(WithDB):
         rating: int,
         resource_type: str,
         rating_upper_bound: int = 5,
-        rating_lower_bound: int = 0,
+        rating_lower_bound: int = 1,
         resource_id: Optional[str] = None,
         with_resources: Optional[List[str]] = [],
         reviewer_type: str = ReviewerType.HUMAN.value,
