@@ -10,7 +10,6 @@ from toolfuse.models import V1ToolRef
 from skillpacks import ActionEvent, EnvState, Episode, V1Action
 from skillpacks.server.models import V1ActionEvent
 from skillpacks.action_opts import ActionOpt
-from skillpacks.review import Review
 
 def create_episode_with_events(num_events: int = 3) -> Episode:
     thread = RoleThread()
