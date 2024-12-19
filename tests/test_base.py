@@ -238,6 +238,74 @@ def test_delete_all_actions():
             len(found_actions) == 0
         ), f"Action {action_id} was not deleted from the database"
 
+def test_delete_all_actions_with_reviews_and_annotations():
+    # Create an episode with events
+    episode = create_episode_with_events(num_events=3)
+    initial_action_count = len(episode.actions)
+    assert initial_action_count == 4  # 3 events + 1 extra event in create_episode_with_events
+
+    # Add reviews from multiple reviewers to each action
+    for action in episode.actions:
+        action.post_review(
+            reviewer="user1@example.com",
+            approved=True,
+            reviewer_type="user",
+            reason="Looks good"
+        )
+        action.post_review(
+            reviewer="user2@example.com",
+            approved=False,
+            reviewer_type="user",
+            reason="Needs improvement"
+        )
+
+        # Add annotations to each action
+        action.post_reviewable(
+            type="AnnotationReviewable",
+            key="annotation_key",
+            value="annotation_value",
+            annotator="user1@example.com"
+        )
+        action.post_reviewable(
+            type="AnnotationReviewable",
+            key="annotation_key_2",
+            value="annotation_value_2",
+            annotator="user2@example.com"
+        )
+
+    # Verify that reviews and annotations have been added to the actions
+    for action in episode.actions:
+        assert len(action.reviews) == 2  # Two reviews per action
+        assert len(action.reviewables) == 2  # Two annotations per action
+
+    # Store action IDs for verification after deletion
+    action_ids = [action.id for action in episode.actions]
+
+    # Check that actions, reviews, and reviewables are in the database before deletion
+    for action_id in action_ids:
+        found_actions = ActionEvent.find(id=action_id)
+        assert len(found_actions) == 1, f"Action {action_id} was not found in the database"
+
+        found_action = found_actions[0]
+        assert len(found_action.reviews) == 2, f"Reviews for action {action_id} are missing or incorrect"
+        assert len(found_action.reviewables) == 2, f"Annotations for action {action_id} are missing or incorrect"
+
+    # Delete all actions from the episode
+    episode.delete_all_actions()
+
+    # Assert that the in-memory actions list is empty
+    assert len(episode.actions) == 0, "Episode actions list was not cleared"
+
+    # Check that the actions are deleted from the database
+    for action_id in action_ids:
+        found_actions = ActionEvent.find(id=action_id)
+        assert len(found_actions) == 0, f"Action {action_id} was not deleted from the database"
+
+        # Also check that the reviews and annotations are deleted
+        for action in found_actions:
+            assert len(action.reviews) == 0, f"Reviews for action {action.id} were not deleted"
+            assert len(action.reviewables) == 0, f"Annotations for action {action.id} were not deleted"
+
 def test_action_event_with_opts_and_ratings():
     # Create ActionEvent with ActionOpts
     state = EnvState(text="Initial state of the environment")

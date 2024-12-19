@@ -14,6 +14,7 @@ from .db.models import (
     EpisodeRecord,
     ReviewableRecord,
     ReviewRecord,
+    action_reviews
 )
 from .review import Review
 from .reviewable import Reviewable, reviewable_string_map, reviewable_type_map
@@ -391,9 +392,14 @@ class ActionEvent(WithDB):
         for db in self.get_db():
             record = db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
             if record:
+                for reviewable in record.reviewables:
+                    reviewable = Reviewable.from_record(reviewable)
+                    reviewable.delete()
+
                 # Optionally delete associated reviews
-                for review in self.reviews:
-                    review.delete()
+                for review in record.reviews:
+                    db.delete(review)
+
                 db.delete(record)
                 db.commit()
             else:

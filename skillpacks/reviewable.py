@@ -178,6 +178,19 @@ class Reviewable(Generic[ReviewableModel, ReviewableType], ABC, WithDB):
                 ]
                 db.commit()
 
+    def delete(self):
+        for db in self.get_db():
+            record = db.query(ReviewableRecord).filter(ReviewableRecord.id == self.id).first()
+            if record:
+                # Optionally delete associated reviews
+                for review in record.reviews:
+                    db.delete(review)
+
+                db.delete(record)
+                db.commit()
+            else:
+                raise ValueError("Reviewable not found")
+
     @classmethod
     def _get_reviewable_class_by_type(cls, reviewable_type: str) -> Type["Reviewable"]:
         """Return the appropriate reviewable class based on the reviewable type."""
