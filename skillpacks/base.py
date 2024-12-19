@@ -109,16 +109,28 @@ class ActionEvent(WithDB):
         reason: Optional[str] = None,
         parent_id: Optional[str] = None,
     ) -> None:
-        review = Review(
-            reviewer=reviewer,
-            approved=approved,
-            reviewer_type=reviewer_type,
-            reason=reason,
-            parent_id=parent_id,
-            resource_type="action",
-            resource_id=self.id,
-        )
-        self.reviews.append(review)
+        
+        reviewerReview = False
+
+        for review in self.reviews:
+            if review.reviewer == reviewer and review.reviewer_type == reviewer_type:
+                reviewerReview = True
+                review.approved = approved
+                review.reason = reason
+                review.updated = time.time()
+
+        if not reviewerReview:
+            review = Review(
+                reviewer=reviewer,
+                approved=approved,
+                reviewer_type=reviewer_type,
+                reason=reason,
+                parent_id=parent_id,
+                resource_type="action",
+                resource_id=self.id,
+            )
+            self.reviews.append(review)
+
         self.save()
 
     def post_reviewable(self, type: str, **kwargs) -> None:

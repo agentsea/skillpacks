@@ -37,6 +37,27 @@ def create_episode_with_events(num_events: int = 3) -> Episode:
     return episode
 
 
+def create_episode_with_actions(num_actions: int = 3) -> Episode:
+    """
+    Helper function to create an episode with a specified number of actions.
+    """
+    thread = RoleThread()
+    thread.post(
+        "user", "What action should I take?", images=["https://example.com/image.png"]
+    )
+    response = RoleMessage("assistant", "You should take this action...")
+    prompt = Prompt(thread, response)
+
+    episode = Episode()
+    for i in range(num_actions):
+        episode.record(
+            EnvState(images=[f"https://example.com/image{i}.png"]),
+            V1Action(name=f"action_{i}", parameters={"param": f"value_{i}"}),
+            V1ToolRef(module="test_module", type="TestType", version="0.1.0"),
+            prompt=prompt.id,
+        )
+    return episode
+
 def test_all():
     thread = RoleThread()
     thread.post(
@@ -303,3 +324,147 @@ def test_action_event_with_opts_and_ratings():
     assert opt2.ratings[0].reason == "Needs improvement"
 
     print("Final check: Action, ActionOpts, and Ratings all loaded correctly.")
+
+
+
+def test_review_replacement_functions():
+    """
+    Tests the review methods to ensure that reviews from the same reviewer
+    are updated instead of duplicated.
+    """
+    # Step 1: Create an episode with multiple actions
+    episode = create_episode_with_actions(num_actions=3)  # Creates 3 actions
+    assert len(episode.actions) == 3, "Episode should have 3 actions"
+
+    # Define reviewers
+    reviewers = [
+        {"reviewer": "user1@example.com", "reviewer_type": "user"},
+        {"reviewer": "user2@example.com", "reviewer_type": "user"},
+    ]
+
+    # Step 2: Perform approve_one and fail_one for each reviewer on each action
+    for action in episode.actions:
+        for reviewer in reviewers:
+            # Alternate between approve and fail for demonstration
+            if reviewer["reviewer"] == "user1@example.com":
+                episode.approve_one(
+                    event_id=action.id,
+                    reviewer=reviewer["reviewer"],
+                    reviewer_type=reviewer["reviewer_type"],
+                    reason=f"{reviewer['reviewer']} approves action {action.id}",
+                )
+            else:
+                episode.fail_one(
+                    event_id=action.id,
+                    reviewer=reviewer["reviewer"],
+                    reviewer_type=reviewer["reviewer_type"],
+                    reason=f"{reviewer['reviewer']} fails action {action.id}",
+                )
+
+    # Step 3: Verify initial reviews
+    for action in episode.actions:
+        for reviewer in reviewers:
+            matching_reviews = [
+                review for review in action.reviews
+                if review.reviewer == reviewer["reviewer"]
+                and review.reviewer_type == reviewer["reviewer_type"]
+            ]
+            assert len(matching_reviews) == 1, f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
+            if reviewer["reviewer"] == "user1@example.com":
+                assert matching_reviews[0].approved == True, f"Review by {reviewer['reviewer']} should be approved"
+                assert matching_reviews[0].reason == f"{reviewer['reviewer']} approves action {action.id}"
+            else:
+                assert matching_reviews[0].approved == False, f"Review by {reviewer['reviewer']} should be failed"
+                assert matching_reviews[0].reason == f"{reviewer['reviewer']} fails action {action.id}"
+
+    # Step 4: Perform approve_all for both reviewers
+    for reviewer in reviewers:
+        episode.approve_all(
+            reviewer=reviewer["reviewer"],
+            reviewer_type=reviewer["reviewer_type"],
+            approve_hidden=False,  # Assuming no hidden actions
+        )
+
+    # Step 4.5: Verify that reviews are updated, not duplicated
+    for action in episode.actions:
+        for reviewer in reviewers:
+            matching_reviews = [
+                review for review in action.reviews
+                if review.reviewer == reviewer["reviewer"]
+                and review.reviewer_type == reviewer["reviewer_type"]
+            ]
+            assert len(matching_reviews) == 1, f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
+            # After fail_all, the latest status should be failed
+            assert matching_reviews[0].approved, f"Review by {reviewer['reviewer']} should be failed after fail_all"
+
+    # Step 5: Perform fail_all for both reviewers
+    for reviewer in reviewers:
+        episode.fail_all(
+            reviewer=reviewer["reviewer"],
+            reviewer_type=reviewer["reviewer_type"],
+            fail_hidden=False,  # Assuming no hidden actions
+        )
+
+    # Step 6: Verify that reviews are updated, not duplicated
+    for action in episode.actions:
+        for reviewer in reviewers:
+            matching_reviews = [
+                review for review in action.reviews
+                if review.reviewer == reviewer["reviewer"]
+                and review.reviewer_type == reviewer["reviewer_type"]
+            ]
+            assert len(matching_reviews) == 1, f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
+            # After fail_all, the latest status should be failed
+            assert not matching_reviews[0].approved, f"Review by {reviewer['reviewer']} should be failed after fail_all"
+
+    # Step 7: Perform approve_prior on the third action for both reviewers
+    third_action = episode.actions[2]
+    for reviewer in reviewers:
+        episode.approve_prior(
+            event_id=third_action.id,
+            reviewer=reviewer["reviewer"],
+            reviewer_type=reviewer["reviewer_type"],
+            approve_hidden=False,
+        )
+
+    # Step 8: Perform fail_prior on the second action for both reviewers (so approving only )
+    second_action = episode.actions[1]
+    # first_action = episode.actions[0]
+    for reviewer in reviewers:
+        episode.fail_prior(
+            event_id=second_action.id,
+            reviewer=reviewer["reviewer"],
+            reviewer_type=reviewer["reviewer_type"],
+            fail_hidden=False,
+        )
+
+    # Step 9: Verify that reviews are updated correctly
+    for index, action in enumerate(episode.actions):
+        for reviewer in reviewers:
+            matching_reviews = [
+                review for review in action.reviews
+                if review.reviewer == reviewer["reviewer"]
+                and review.reviewer_type == reviewer["reviewer_type"]
+            ]
+            assert len(matching_reviews) == 1, f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
+
+            # Determine expected approval status based on the latest operation
+            if index == 0:
+                expected_approved = False
+            elif index == 1:
+                expected_approved = False
+            else:
+                expected_approved = True
+
+            assert matching_reviews[0].approved == expected_approved, (
+                f"Review by {reviewer['reviewer']} for action {action.id} index: {index}  should be {'approved' if expected_approved else 'failed'}"
+            )
+
+    # Step 10: Ensure no duplicate reviews exist
+    for action in episode.actions:
+        unique_reviewers = set(
+            (review.reviewer, review.reviewer_type) for review in action.reviews
+        )
+        assert len(unique_reviewers) == len(action.reviews), f"Action {action.id} has duplicate reviews"
+
+    print("All review replacement functions tested successfully.")
