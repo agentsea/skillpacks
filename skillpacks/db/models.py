@@ -30,7 +30,7 @@ reviewable_reviews = Table(
 action_reviewables = Table(
     "action_reviewables",
     Base.metadata,
-    Column("action_id", String, ForeignKey("actions.id")),
+    Column("action_id", String, ForeignKey("actions.id", ondelete="cascade")),
     Column("reviewable_id", String, ForeignKey("reviewables.id", ondelete="cascade")),
 )
 
