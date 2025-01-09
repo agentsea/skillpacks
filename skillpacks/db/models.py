@@ -50,7 +50,6 @@ class ReviewableRecord(Base):
         "ReviewRecord",
         secondary=reviewable_reviews,  # TODO find other way than association table
         lazy="select",  # or 'select', depending on your preference
-        cascade="all, delete-orphan"
     )
 
 
