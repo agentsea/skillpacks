@@ -427,6 +427,7 @@ def test_review_replacement_functions():
                     reviewer=reviewer["reviewer"],
                     reviewer_type=reviewer["reviewer_type"],
                     reason=f"{reviewer['reviewer']} fails action {action.id}",
+                    correction=V1Action(name="click", parameters={"x":590,"y":120,"button":"left"})
                 )
 
     # Step 3: Verify initial reviews

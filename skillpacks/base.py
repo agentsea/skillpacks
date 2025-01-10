@@ -109,16 +109,19 @@ class ActionEvent(WithDB):
         reviewer_type: str = ReviewerType.HUMAN.value,
         reason: Optional[str] = None,
         parent_id: Optional[str] = None,
+        correction: Optional[V1Action] = None,
     ) -> None:
         
         reviewerReview = False
-
+        correctionRecord = correction.model_dump_json() if correction else None
+        correctionSchema = V1Action
         for review in self.reviews:
             if review.reviewer == reviewer and review.reviewer_type == reviewer_type:
                 reviewerReview = True
                 review.approved = approved
                 review.reason = reason
                 review.updated = time.time()
+                review.correction = review.correction
 
         if not reviewerReview:
             review = Review(
@@ -129,6 +132,8 @@ class ActionEvent(WithDB):
                 parent_id=parent_id,
                 resource_type="action",
                 resource_id=self.id,
+                correction=correctionRecord,
+                correction_schema=correctionSchema,
             )
             self.reviews.append(review)
 
@@ -610,6 +615,7 @@ class Episode(WithDB):
         reviewer: str,
         reviewer_type: str = ReviewerType.HUMAN.value,
         reason: Optional[str] = None,
+        correction: Optional[V1Action] = None,
     ) -> None:
         """Fail the given event."""
         for event in self.actions:
@@ -619,6 +625,7 @@ class Episode(WithDB):
                     reviewer_type=reviewer_type,
                     reason=reason,
                     approved=False,
+                    correction=correction
                 )
                 break
 
