@@ -397,13 +397,13 @@ class ActionEvent(WithDB):
         for db in self.get_db():
             record = db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
             if record:
-                for reviewable in record.reviewables:
-                    reviewable = Reviewable.from_record(reviewable)
-                    reviewable.delete()
+                # for reviewable in record.reviewables:
+                #     reviewable = Reviewable.from_record(reviewable)
+                #     reviewable.delete()
 
-                # Optionally delete associated reviews
-                for review in record.reviews:
-                    db.delete(review)
+                # # Optionally delete associated reviews
+                # for review in record.reviews:
+                #     db.delete(review)
 
                 db.delete(record)
                 db.commit()

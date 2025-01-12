@@ -30,8 +30,8 @@ reviewable_reviews = Table(
 action_reviewables = Table(
     "action_reviewables",
     Base.metadata,
-    Column("action_id", String, ForeignKey("actions.id", ondelete="cascade")),
-    Column("reviewable_id", String, ForeignKey("reviewables.id", ondelete="cascade")),
+    Column("action_id", String, ForeignKey("actions.id")),
+    Column("reviewable_id", String, ForeignKey("reviewables.id")),
 )
 
 
@@ -50,6 +50,7 @@ class ReviewableRecord(Base):
         "ReviewRecord",
         secondary=reviewable_reviews,  # TODO find other way than association table
         lazy="select",  # or 'select', depending on your preference
+        cascade="all, delete",  # Add cascade to propagate deletion
     )
 
 
@@ -136,12 +137,13 @@ class ActionRecord(Base):
         "ReviewableRecord",
         secondary=action_reviewables,
         lazy="select",
-        # TODO test if we can cascade action deletions to reviewables through the secondary table. If so this will yield a performance improvement
+        cascade="all, delete",  # Add cascade to propagate deletion
     )
     reviews = relationship(
         "ReviewRecord",
         secondary=action_reviews,
         lazy="dynamic",  # or 'select', depending on your preference
+        cascade="all, delete",  # Add cascade to propagate deletion
     )
 
 
