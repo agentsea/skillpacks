@@ -8,7 +8,11 @@ from pydantic import BaseModel
 from skillpacks.db.conn import WithDB
 from skillpacks.db.models import ReviewRecord
 from skillpacks.server.models import ReviewerType, V1Review
+from enum import Enum
 
+class Resource(Enum):
+    TASK = "task"
+    Action = "action"
 
 class Review(WithDB):
     """A review of an agent action or task"""
