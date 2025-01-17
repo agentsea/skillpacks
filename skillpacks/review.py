@@ -133,7 +133,7 @@ class Review(WithDB):
         )
         review.correction = record.correction
         review.correction_schema = (
-            json.loads(record.correction_schema) if record.correction_schema else None
+            json.loads(record.correction_schema) if record.correction_schema else None # type: ignore
         )
         review.created = record.created
         review.updated = record.updated
@@ -144,5 +144,31 @@ class Review(WithDB):
         """Finds reviews in the database based on provided filters."""
         for db in cls.get_db():
             records = db.query(ReviewRecord).filter_by(**kwargs).all()
+            return [cls.from_record(record) for record in records]
+        raise ValueError("No database session available")
+
+    @classmethod
+    def find_many(cls,
+        resource_ids: Optional[List[str]] = None,
+        resource_type: Optional[str] = None,
+        review_ids: Optional[List[str]] = None,
+        reviewers: Optional[List[str]] = None,
+        approved: Optional[bool] = None,
+    ) -> List["Review"]:
+        """Finds review requirements in the database based on provided filters."""
+        # TODO require a filter?
+        for db in cls.get_db():
+            query = db.query(ReviewRecord)
+            if resource_type:
+                query = query.filter(ReviewRecord.resource_type == resource_type)
+            if resource_ids:
+                query = query.filter(ReviewRecord.resource_id.in_(resource_ids))
+            if review_ids:
+                query = query.filter(ReviewRecord.id.in_(review_ids))
+            if reviewers:
+                query = query.filter(ReviewRecord.reviewer.in_(reviewers))
+            if approved is not None:
+                query = query.filter(ReviewRecord.approved == approved)
+            records = db.query(ReviewRecord).order_by(ReviewRecord.created.desc()).all()
             return [cls.from_record(record) for record in records]
         raise ValueError("No database session available")
