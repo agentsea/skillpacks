@@ -466,6 +466,14 @@ class Episode(WithDB):
         self.actions.append(action)
         self.updated = time.time()
         self.save()
+    
+    def delete_action(self, action_id) -> None:
+        """Records an action to the episode."""
+        self.actions = [action for action in self.actions if action.id != action_id]
+        actionResults = ActionEvent.find(id=action_id)
+        actionResults[0].delete()
+        self.updated = time.time()
+        self.save()
 
     def record(
         self,

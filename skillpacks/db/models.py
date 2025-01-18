@@ -1,6 +1,6 @@
 import time
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, Boolean, Float, Table
+from sqlalchemy import Column, Index, Integer, String, ForeignKey, Text, Boolean, Float, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -38,7 +38,10 @@ action_reviewables = Table(
 # Database Models
 class ReviewableRecord(Base):
     __tablename__ = "reviewables"
-
+    __table_args__ = (
+        Index("idx_reviewable_resource", "resource_type", "resource_id"),
+        Index("idx_reviewable_created", "created"),
+    )
     id = Column(String, primary_key=True)
     type = Column(String)
     reviewable = Column(Text)
@@ -56,7 +59,12 @@ class ReviewableRecord(Base):
 
 class ReviewRecord(Base):
     __tablename__ = "reviews"
-
+    __table_args__ = (
+        Index("idx_reviews_resource", "resource_type", "resource_id"),
+        Index("idx_reviews_approved", "approved"),
+        Index("idx_reviews_reviewer", "reviewer"),
+        Index("idx_reviews_created", "created"),
+    )
     id = Column(String, primary_key=True)
     reviewer = Column(String, nullable=False)
     approved = Column(Boolean, nullable=False)
