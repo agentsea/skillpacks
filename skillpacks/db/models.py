@@ -3,7 +3,6 @@ import time
 from sqlalchemy import Column, Index, Integer, String, ForeignKey, Text, Boolean, Float, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-from mllm.db.models import PromptRecord
 
 Base = declarative_base()
 
@@ -145,7 +144,6 @@ class ActionRecord(Base):
     owner_id = Column(String, nullable=True)
     namespace = Column(String, default="default")
     prompt_id = Column(String, ForeignKey("prompts.id"), nullable=True)
-    prompt = relationship("PromptRecord", lazy="joined")
     state = Column(Text)
     action = Column(Text)
     result = Column(Text)
