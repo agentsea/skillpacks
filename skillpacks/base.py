@@ -7,6 +7,7 @@ from mllm import Prompt
 from skillpacks.action_opts import ActionOpt
 from skillpacks.rating import Rating
 from sqlalchemy import asc
+from sqlalchemy.orm.exc import StaleDataError
 
 from .db.conn import WithDB
 from .db.models import (
@@ -16,7 +17,7 @@ from .db.models import (
     ReviewRecord,
     action_reviews
 )
-from .review import Review
+from .review import Review, Resource
 from .reviewable import Reviewable, reviewable_string_map, reviewable_type_map
 from .server.models import (
     ReviewerType,
@@ -130,7 +131,7 @@ class ActionEvent(WithDB):
                 reviewer_type=reviewer_type,
                 reason=reason,
                 parent_id=parent_id,
-                resource_type="action",
+                resource_type=Resource.Action.value,
                 resource_id=self.id,
                 correction=correctionRecord,
                 correction_schema=correctionSchema,
@@ -153,7 +154,7 @@ class ActionEvent(WithDB):
         # Create an instance of the reviewable dynamically using the class
         reviewable = reviewable_class(
             **kwargs,
-            resource_type="action",
+            resource_type=Resource.Action.value,
             resource_id=self.id,  # Set the resource ID to the action's ID
         )
 
@@ -238,63 +239,114 @@ class ActionEvent(WithDB):
     def save(self) -> None:
         """Saves the instance to the database."""
         for db in self.get_db():
-            record = self.to_record()
-            if self.prompt:
-                self.prompt.save()
-            db.merge(record)
-            db.commit()
+            try:
+                record = self.to_record()
+                if self.prompt:
+                    self.prompt.save()
+                merged_record = db.merge(record)
 
-            # After committing the action, associate the reviews
-            if self.reviews:
-                for review in self.reviews:
-                    if not review.resource_id:
-                        review.resource_id = self.id
-                    review.save()
-                # Refresh the record to get the latest state
-                record = (
-                    db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
-                )
+                # Associate the reviews
+                if self.reviews:
+                    for review in self.reviews:
+                        if not review.resource_id:
+                            review.resource_id = self.id
+                        if not review.resource_type:
+                            review.resource_type = Resource.Action.value
+                        review.save()
 
-                if not record:
-                    raise ValueError(f"ActionRecord with id {self.id} not found")
-                # Associate the reviews with the action via the association table
-                record.reviews = [
-                    db.query(ReviewRecord).filter_by(id=review.id).first()
-                    for review in self.reviews
-                ]
+                    # Associate the freshly saved ReviewRecords with the merged ActionRecord
+                    merged_record.reviews = [
+                        db.query(ReviewRecord).filter_by(id=r.id).one()
+                        for r in self.reviews
+                    ]
 
-            # After committing the action, associate the reviewables TODO combine this with reviews if possible
-            if self.reviewables:
-                for reviewable in self.reviewables:
-                    if not reviewable.resource_id:
-                        reviewable.resource_id = self.id
-                    reviewable.save()
-                # Refresh the record to get the latest state
-                record = (
-                    db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
-                )
+                # Handle Reviewables
+                if self.reviewables:
+                    for reviewable in self.reviewables:
+                        if not reviewable.resource_id:
+                            reviewable.resource_id = self.id
+                        if not reviewable.resource_type:
+                            reviewable.resource_type = Resource.Action.value
+                        reviewable.save()
 
-                if not record:
-                    raise ValueError(f"ActionRecord with id {self.id} not found")
-                # Associate the reviewables with the action via the association table
-                record.reviewables = [
-                    db.query(ReviewableRecord).filter_by(id=reviewable.id).first()
-                    for reviewable in self.reviewables
-                ]
+                    merged_record.reviewables = [
+                        db.query(ReviewableRecord).filter_by(id=rv.id).one()
+                        for rv in self.reviewables
+                    ]
 
-            # After committing the action, associate the action_opts
-            if self.action_opts:
-                for action_opt in self.action_opts:
-                    action_opt.action_id = self.id
-                    action_opt.save()
-                # Refresh the record to get the latest state
-                record = (
-                    db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
-                )
-                if not record:
-                    raise ValueError(f"ActionRecord with id {self.id} not found")
+                # After committing the action, associate the action_opts
+                if self.action_opts:
+                    for action_opt in self.action_opts:
+                        action_opt.action_id = self.id
+                        action_opt.save()
+                    # Refresh the record to get the latest state
+                    record = (
+                        db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
+                    )
+                    if not record:
+                        raise ValueError(f"ActionRecord with id {self.id} not found")
 
-            db.commit()
+                db.commit()
+            except StaleDataError:
+                # This indicates another transaction updated this ActionRecord 
+                # (version_id) before we could commit.
+                db.rollback()
+                print(f"Concurrent update detected, trying so save again with updates reviews and reviewables, lost version is {self.to_v1()}", flush=True)
+                try:
+                    # Reload the latest ActionRecord from the database
+                    latest_record = db.query(ActionRecord).filter(ActionRecord.id == self.id).one()
+
+                    concurrent_update_for_associated_object = False
+
+                    # Merge missing Reviews
+                    if self.reviews:
+                        existing_review_ids = {review.id for review in latest_record.reviews}
+                        new_reviews = [r for r in self.reviews if r.id not in existing_review_ids]
+                        for review in new_reviews:
+                            concurrent_update_for_associated_object = True
+                            if not review.resource_id:
+                                review.resource_id = self.id
+                            if not review.resource_type:
+                                review.resource_type = Resource.Action.value
+                            review.save()
+                            latest_record.reviews.append(review)
+
+                    # Merge missing Reviewables
+                    if self.reviewables:
+                        existing_reviewable_ids = {rv.id for rv in latest_record.reviewables}
+                        new_reviewables = [rv for rv in self.reviewables if rv.id not in existing_reviewable_ids]
+                        for reviewable in new_reviewables:
+                            concurrent_update_for_associated_object = True
+                            if not reviewable.resource_id:
+                                reviewable.resource_id = self.id
+                            if not reviewable.resource_type:
+                                reviewable.resource_type = Resource.Action.value
+                            reviewable.save()
+                            latest_record.reviewables.append(reviewable)
+
+                    # Handle ActionOpts (assuming they are won't be a conflict)
+                    if self.action_opts:
+                        existing_action_opt_ids = {opt.id for opt in latest_record.action_opts}
+                        new_action_opts = [opt for opt in self.action_opts if opt.id not in existing_action_opt_ids]
+                        for action_opt in new_action_opts:
+                            concurrent_update_for_associated_object = True
+                            action_opt.action_id = self.id
+                            action_opt.save()
+                            latest_record.action_opts.append(action_opt)
+                        # No need to reassign action_opts if they are already handled
+
+                    if concurrent_update_for_associated_object:
+                        # Retry the commit once
+                        db.commit()
+                        print(f"Successfully retried action save {self.to_v1()}", flush=True)
+                    else:
+                        print(f"concurrent update was not an associated object not retrying, lost action: {self.to_v1()} existing action: {self.from_record(latest_record).to_v1()}")
+                except StaleDataError:
+                    db.rollback()
+                    raise ValueError(f"Concurrent update detected again and could not resolve the conflict; please retry. {self.to_v1()}")
+                except Exception as e:
+                    db.rollback()
+                    raise ValueError(f"An error occurred while handling concurrent updates: {str(e)} Action lost: {self.to_v1()}")
 
     def to_record(self) -> ActionRecord:
         """Converts the instance to a database record."""

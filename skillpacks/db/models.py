@@ -3,20 +3,21 @@ import time
 from sqlalchemy import Column, Index, Integer, String, ForeignKey, Text, Boolean, Float, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from mllm.db.models import PromptRecord
 
 Base = declarative_base()
 
 action_reviews = Table(
     "action_reviews",
     Base.metadata,
-    Column("action_id", String, ForeignKey("actions.id")),
+    Column("action_id", String, ForeignKey("actions.id"), index=True),
     Column("review_id", String, ForeignKey("reviews.id")),
 )
 
 action_opt_ratings = Table(
     "action_opt_ratings",
     Base.metadata,
-    Column("action_id", String, ForeignKey("action_opts.id")),
+    Column("action_id", String, ForeignKey("action_opts.id"), index=True),
     Column("rating_id", String, ForeignKey("ratings.id")),
 )
 
@@ -30,7 +31,7 @@ reviewable_reviews = Table(
 action_reviewables = Table(
     "action_reviewables",
     Base.metadata,
-    Column("action_id", String, ForeignKey("actions.id")),
+    Column("action_id", String, ForeignKey("actions.id"), index=True),
     Column("reviewable_id", String, ForeignKey("reviewables.id")),
 )
 
@@ -82,6 +83,13 @@ class ReviewRecord(Base):
 class RatingRecord(Base):
     __tablename__ = "ratings"
 
+    __table_args__ = (
+        Index("idx_ratings_reviewer", "reviewer"),
+        Index("idx_ratings_rating", "rating"),
+        Index("idx_ratings_resource_type", "resource_type"),
+        Index("idx_ratings_parent_id", "parent_id"),
+    )
+
     id = Column(String, primary_key=True)
     reviewer = Column(String, nullable=False)
     rating = Column(Integer, nullable=False)
@@ -118,11 +126,26 @@ class ActionOptRecord(Base):
 
 class ActionRecord(Base):
     __tablename__ = "actions"
+    # Add the version_id column:
+    version_id = Column(Integer, nullable=False, default=0)
+
+    __mapper_args__ = {
+        # Have SQLAlchemy track changes in 'version_id' for optimistic locking
+        "version_id_col": version_id
+    }
+
+    __table_args__ = (
+        Index("idx_actions_owner_id", "owner_id"),
+        Index("idx_actions_created", "created"),
+        Index("idx_actions_event_order", "event_order"),
+        Index("idx_actions_episode_id", "episode_id"),
+    )
 
     id = Column(String, primary_key=True)
     owner_id = Column(String, nullable=True)
     namespace = Column(String, default="default")
-    prompt_id = Column(String, nullable=True)
+    prompt_id = Column(String, ForeignKey("prompts.id"), nullable=True)
+    prompt = relationship("PromptRecord", lazy="joined")
     state = Column(Text)
     action = Column(Text)
     result = Column(Text)
@@ -144,19 +167,23 @@ class ActionRecord(Base):
     reviewables = relationship(
         "ReviewableRecord",
         secondary=action_reviewables,
-        lazy="select",
+        lazy="selectin",
         cascade="all, delete",  # Add cascade to propagate deletion
     )
     reviews = relationship(
         "ReviewRecord",
         secondary=action_reviews,
-        lazy="dynamic",  # or 'select', depending on your preference
+        lazy="selectin",  # or 'select', depending on your preference
         cascade="all, delete",  # Add cascade to propagate deletion
     )
 
 
 class EpisodeRecord(Base):
     __tablename__ = "episodes"
+
+    __table_args__ = (
+        Index("idx_episodes_owner_id", "owner_id"),
+    )
 
     id = Column(String, primary_key=True)
     owner_id = Column(String, nullable=True)
