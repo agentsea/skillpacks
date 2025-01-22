@@ -143,7 +143,7 @@ class ActionRecord(Base):
     id = Column(String, primary_key=True)
     owner_id = Column(String, nullable=True)
     namespace = Column(String, default="default")
-    prompt_id = Column(String, ForeignKey("prompts.id"), nullable=True)
+    prompt_id = Column(String, nullable=True)
     state = Column(Text)
     action = Column(Text)
     result = Column(Text)
