@@ -26,7 +26,7 @@ class V1Review(BaseModel):
         description="A list of resource IDs of resource_type (EX. Action, Task) that the resource_id was mass reviewed with.",
     )
     parent_id: Optional[str] = None
-    correction: Optional[str] = None
+    correction: Optional[str | Dict[str, Any]] = None
     correction_schema: Optional[Dict[str, Any]] = None
     created: float
     updated: Optional[float] = None
