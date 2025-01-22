@@ -102,6 +102,15 @@ class Review(WithDB):
 
     def to_record(self) -> ReviewRecord:
         """Converts the review to a database record."""
+
+        correction_str = None
+        if self.correction is not None:
+            if isinstance(self.correction, str):
+                correction_str = self.correction
+            else:
+                # Attempt to JSON-serialize
+                correction_str = json.dumps(self.correction)
+
         return ReviewRecord(
             id=self.id,
             approved=self.approved,
@@ -112,7 +121,7 @@ class Review(WithDB):
             resource_id=self.resource_id,
             with_resources=json.dumps(self.with_resources),
             parent_id=self.parent_id,
-            correction=self.correction,
+            correction=correction_str,
             correction_schema=json.dumps(self.correction_schema)
             if self.correction_schema
             else None,
@@ -135,7 +144,14 @@ class Review(WithDB):
         review.with_resources = (
             json.loads(record.with_resources) if record.with_resources else []  # type: ignore
         )
-        review.correction = record.correction
+        # Attempt to parse correction as JSON
+        review.correction = None
+        if record.correction is not None:
+            try:
+                review.correction = json.loads(record.correction) # type: ignore
+            except (ValueError, TypeError):
+                # If it's not valid JSON, just store the raw string
+                review.correction = record.correction
         review.correction_schema = (
             json.loads(record.correction_schema) if record.correction_schema else None # type: ignore
         )
