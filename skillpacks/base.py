@@ -515,9 +515,18 @@ class Episode(WithDB):
     def record_event(self, action: ActionEvent) -> None:
         """Records an action to the episode."""
         action.episode_id = self.id
+        action.save()
+        # update in-memory copy only
         self.actions.append(action)
         self.updated = time.time()
-        self.save()
+        # minimal DB update for the Episode updated
+        for db in self.get_db():
+            db.execute(
+                EpisodeRecord.__table__.update()
+                .where(EpisodeRecord.id == self.id)
+                .values(updated=self.updated)
+            )
+            db.commit()
     
     def delete_action(self, action_id) -> None:
         """Records an action to the episode."""

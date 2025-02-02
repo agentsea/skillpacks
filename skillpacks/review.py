@@ -49,6 +49,17 @@ class Review(WithDB):
         self.updated = updated
 
     def to_v1(self) -> V1Review:
+        correction = self.correction
+        # Check if correction is a string that can be parsed as JSON
+        if isinstance(self.correction, str):
+            try:
+                parsed_correction = json.loads(self.correction)
+                if isinstance(parsed_correction, dict):
+                    correction = parsed_correction
+            except json.JSONDecodeError:
+                # If parsing fails, retain the original string
+                pass
+
         return V1Review(
             id=self.id,
             reviewer=self.reviewer,
@@ -59,7 +70,7 @@ class Review(WithDB):
             resource_type=self.resource_type,
             resource_id=self.resource_id,
             with_resources=self.with_resources,
-            correction=self.correction,
+            correction=correction,
             correction_schema=self.correction_schema,
             created=self.created,
             updated=self.updated,
