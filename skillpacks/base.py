@@ -4,10 +4,12 @@ from typing import Any, Dict, List, Optional
 
 import shortuuid
 from mllm import Prompt
-from skillpacks.action_opts import ActionOpt
-from skillpacks.rating import Rating
+from orign import V1ChatEvent
 from sqlalchemy import asc
 from sqlalchemy.orm.exc import StaleDataError
+
+from skillpacks.action_opts import ActionOpt
+from skillpacks.rating import Rating
 
 from .db.conn import WithDB
 from .db.models import (
@@ -15,15 +17,13 @@ from .db.models import (
     EpisodeRecord,
     ReviewableRecord,
     ReviewRecord,
-    action_reviews
 )
-from .review import Review, Resource
+from .review import Resource, Review
 from .reviewable import Reviewable, reviewable_string_map, reviewable_type_map
 from .server.models import (
     ReviewerType,
     V1Action,
     V1ActionEvent,
-    V1ActionOpt,
     V1EnvState,
     V1Episode,
     V1ToolRef,
@@ -39,7 +39,7 @@ class ActionEvent(WithDB):
         state: EnvState,
         action: V1Action,
         tool: V1ToolRef,
-        prompt: Optional[Prompt] = None,
+        prompt: Optional[Prompt | V1ChatEvent] = None,
         result: Optional[Any] = None,
         end_state: Optional[EnvState] = None,
         event_order: Optional[int] = None,
@@ -112,7 +112,6 @@ class ActionEvent(WithDB):
         parent_id: Optional[str] = None,
         correction: Optional[V1Action] = None,
     ) -> None:
-        
         reviewerReview = False
         correctionRecord = correction.model_dump_json() if correction else None
         correctionSchema = V1Action
@@ -163,10 +162,14 @@ class ActionEvent(WithDB):
         self.save()
 
     def to_v1(self) -> V1ActionEvent:
+        if isinstance(self.prompt, V1ChatEvent):
+            prompt = self.prompt
+        else:
+            prompt = self.prompt.to_v1() if self.prompt else None
         return V1ActionEvent(
             id=self.id,
             state=self.state.to_v1(),
-            prompt=self.prompt.to_v1() if self.prompt else None,
+            prompt=prompt,
             action=self.action,
             result=self.result,
             end_state=self.end_state.to_v1() if self.end_state else None,
@@ -200,9 +203,11 @@ class ActionEvent(WithDB):
         event.state = EnvState.from_v1(v1.state)
         event.action = v1.action
         event.tool = v1.tool
-        event.prompt = (
-            Prompt.from_v1(v1.prompt) if v1.prompt else None
-        )  # Replace Prompt with your actual class
+        if isinstance(v1.prompt, V1ChatEvent):
+            event.prompt = v1.prompt
+        else:
+            event.prompt = Prompt.from_v1(v1.prompt) if v1.prompt else None
+        event.result = v1.result
         event.result = v1.result
         event.end_state = EnvState.from_v1(v1.end_state) if v1.end_state else None
         event.namespace = v1.namespace
@@ -214,7 +219,8 @@ class ActionEvent(WithDB):
         event.episode_id = v1.episode_id
         event.action_opts = (
             [ActionOpt.from_v1(actionOpt_v1) for actionOpt_v1 in v1.action_opts]
-            if v1.action_opts else []
+            if v1.action_opts
+            else []
         )
         event.reviews = (
             [Review.from_v1(review_v1) for review_v1 in v1.reviews]
@@ -242,7 +248,8 @@ class ActionEvent(WithDB):
             try:
                 record = self.to_record()
                 if self.prompt:
-                    self.prompt.save()
+                    if isinstance(self.prompt, Prompt):
+                        self.prompt.save()
                 merged_record = db.merge(record)
 
                 # Associate the reviews
@@ -281,27 +288,38 @@ class ActionEvent(WithDB):
                         action_opt.save()
                     # Refresh the record to get the latest state
                     record = (
-                        db.query(ActionRecord).filter(ActionRecord.id == self.id).first()
+                        db.query(ActionRecord)
+                        .filter(ActionRecord.id == self.id)
+                        .first()
                     )
                     if not record:
                         raise ValueError(f"ActionRecord with id {self.id} not found")
 
                 db.commit()
             except StaleDataError:
-                # This indicates another transaction updated this ActionRecord 
+                # This indicates another transaction updated this ActionRecord
                 # (version_id) before we could commit.
                 db.rollback()
-                print(f"Concurrent update detected, trying so save again with updates reviews and reviewables, lost version is {self.to_v1()}", flush=True)
+                print(
+                    f"Concurrent update detected, trying so save again with updates reviews and reviewables, lost version is {self.to_v1()}",
+                    flush=True,
+                )
                 try:
                     # Reload the latest ActionRecord from the database
-                    latest_record = db.query(ActionRecord).filter(ActionRecord.id == self.id).one()
+                    latest_record = (
+                        db.query(ActionRecord).filter(ActionRecord.id == self.id).one()
+                    )
 
                     concurrent_update_for_associated_object = False
 
                     # Merge missing Reviews
                     if self.reviews:
-                        existing_review_ids = {review.id for review in latest_record.reviews}
-                        new_reviews = [r for r in self.reviews if r.id not in existing_review_ids]
+                        existing_review_ids = {
+                            review.id for review in latest_record.reviews
+                        }
+                        new_reviews = [
+                            r for r in self.reviews if r.id not in existing_review_ids
+                        ]
                         for review in new_reviews:
                             concurrent_update_for_associated_object = True
                             if not review.resource_id:
@@ -313,8 +331,14 @@ class ActionEvent(WithDB):
 
                     # Merge missing Reviewables
                     if self.reviewables:
-                        existing_reviewable_ids = {rv.id for rv in latest_record.reviewables}
-                        new_reviewables = [rv for rv in self.reviewables if rv.id not in existing_reviewable_ids]
+                        existing_reviewable_ids = {
+                            rv.id for rv in latest_record.reviewables
+                        }
+                        new_reviewables = [
+                            rv
+                            for rv in self.reviewables
+                            if rv.id not in existing_reviewable_ids
+                        ]
                         for reviewable in new_reviewables:
                             concurrent_update_for_associated_object = True
                             if not reviewable.resource_id:
@@ -326,8 +350,14 @@ class ActionEvent(WithDB):
 
                     # Handle ActionOpts (assuming they are won't be a conflict)
                     if self.action_opts:
-                        existing_action_opt_ids = {opt.id for opt in latest_record.action_opts}
-                        new_action_opts = [opt for opt in self.action_opts if opt.id not in existing_action_opt_ids]
+                        existing_action_opt_ids = {
+                            opt.id for opt in latest_record.action_opts
+                        }
+                        new_action_opts = [
+                            opt
+                            for opt in self.action_opts
+                            if opt.id not in existing_action_opt_ids
+                        ]
                         for action_opt in new_action_opts:
                             concurrent_update_for_associated_object = True
                             action_opt.action_id = self.id
@@ -338,25 +368,37 @@ class ActionEvent(WithDB):
                     if concurrent_update_for_associated_object:
                         # Retry the commit once
                         db.commit()
-                        print(f"Successfully retried action save {self.to_v1()}", flush=True)
+                        print(
+                            f"Successfully retried action save {self.to_v1()}",
+                            flush=True,
+                        )
                     else:
-                        print(f"concurrent update was not an associated object not retrying, lost action: {self.to_v1()} existing action: {self.from_record(latest_record).to_v1()}")
+                        print(
+                            f"concurrent update was not an associated object not retrying, lost action: {self.to_v1()} existing action: {self.from_record(latest_record).to_v1()}"
+                        )
                 except StaleDataError:
                     db.rollback()
-                    raise ValueError(f"Concurrent update detected again and could not resolve the conflict; please retry. {self.to_v1()}")
+                    raise ValueError(
+                        f"Concurrent update detected again and could not resolve the conflict; please retry. {self.to_v1()}"
+                    )
                 except Exception as e:
                     db.rollback()
-                    raise ValueError(f"An error occurred while handling concurrent updates: {str(e)} Action lost: {self.to_v1()}")
+                    raise ValueError(
+                        f"An error occurred while handling concurrent updates: {str(e)} Action lost: {self.to_v1()}"
+                    )
 
     def to_record(self) -> ActionRecord:
         """Converts the instance to a database record."""
-        prompt_id = None
+        prompt = None
         if self.prompt:
-            prompt_id = self.prompt.id
+            if isinstance(self.prompt, Prompt):
+                prompt = self.prompt.id
+            else:
+                prompt = self.prompt.model_dump_json()
 
         return ActionRecord(
             id=self.id,
-            prompt_id=prompt_id,
+            prompt_id=prompt,
             state=self.state.to_v1().model_dump_json(),  # Adjust serialization as needed
             action=self.action.model_dump_json(),
             result=json.dumps(self.result),
@@ -398,10 +440,12 @@ class ActionEvent(WithDB):
         event.state = EnvState.from_v1(V1EnvState.model_validate_json(record.state))  # type: ignore
         event.action = V1Action.model_validate_json(record.action)  # type: ignore
         event.tool = V1ToolRef.model_validate_json(record.tool)  # type: ignore
-
-        event.prompt = (
-            Prompt.find(id=record.prompt_id)[0] if record.prompt_id else None  # type: ignore
-        )  # Replace Prompt with your actual class
+        try:
+            event.prompt = V1ChatEvent.model_validate_json(record.prompt_id)  # type: ignore
+        except Exception:
+            event.prompt = (
+                Prompt.find(id=record.prompt_id)[0] if record.prompt_id else None  # type: ignore
+            )  # type: ignore
         event.result = json.loads(record.result)  # type: ignore
         event.end_state = (
             EnvState.from_v1(V1EnvState.model_validate_json(record.end_state))  # type: ignore
@@ -527,8 +571,8 @@ class Episode(WithDB):
                 .values(updated=self.updated)
             )
             db.commit()
-    
-    def delete_action(self, action_id) -> None:
+
+    def delete_action(self, action_id: str) -> None:
         """Records an action to the episode."""
         self.actions = [action for action in self.actions if action.id != action_id]
         actionResults = ActionEvent.find(id=action_id)
@@ -541,7 +585,7 @@ class Episode(WithDB):
         state: EnvState,
         action: V1Action,
         tool: V1ToolRef,
-        prompt: Optional[Prompt | str] = None,
+        prompt: Optional[Prompt | str | V1ChatEvent] = None,
         result: Optional[Any] = None,
         end_state: Optional[EnvState] = None,
         action_opts: Optional[List[ActionOpt]] = None,
@@ -694,7 +738,7 @@ class Episode(WithDB):
                     reviewer_type=reviewer_type,
                     reason=reason,
                     approved=False,
-                    correction=correction
+                    correction=correction,
                 )
                 break
 

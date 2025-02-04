@@ -13,6 +13,7 @@ sqlalchemy = "^2.0.27"
 shortuuid = "^1.0.13"
 devicebay = "^0.1.28"
 mllm = "^0.1.56"
+orign = "^0.1.26"
 
 [tool.poetry.group.openai.dependencies]
 openai = "^1.12.0"

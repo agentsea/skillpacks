@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 from mllm import V1Prompt
+from orign import V1ChatEvent
 from pydantic import BaseModel, Field
 from toolfuse.models import V1ToolRef
 
@@ -53,6 +54,7 @@ class V1Rating(BaseModel):
     correction_schema: Optional[Dict[str, Any]] = None
     created: float
     updated: Optional[float] = None
+
 
 class V1Action(BaseModel):
     """An action on a tool"""
@@ -106,6 +108,7 @@ class V1Reviewable(BaseModel):
 
 class V1ActionOpt(BaseModel):
     """An action that could have occurred"""
+
     id: str
     action: Optional[V1Action] = None
     prompt: Optional[V1Prompt] = None
@@ -126,7 +129,7 @@ class V1ActionEvent(BaseModel):
     event_order: Optional[int] = None
     tool: V1ToolRef
     namespace: str
-    prompt: Optional[V1Prompt] = None
+    prompt: Optional[V1Prompt | V1ChatEvent] = None
     reviews: List[V1Review] = []
     reviewables: List[V1Reviewable] = []
     flagged: bool = False
@@ -158,12 +161,60 @@ class V1CreateActionEvent(
     tool: V1ToolRef
     namespace: str
     metadata: dict = {}
-    prompt: Optional[V1Prompt] = None
+    prompt: Optional[V1Prompt | V1ChatEvent] = None
     reviews: List[V1Review] = []
     reviewables: List[V1Reviewable] = []
     flagged: bool = False
     model: Optional[str] = None
     agent_id: Optional[str] = None
+
+
+class V1ThoughtEvent(BaseModel):
+    """An thought that has occurred"""
+
+    id: str
+    thought: str
+    state: V1EnvState
+    event_order: Optional[int] = None
+    tool: Optional[V1ToolRef] = None
+    namespace: str
+    prompt: Optional[V1Prompt | V1ChatEvent] = None
+    reviews: List[V1Review] = []
+    reviewables: List[V1Reviewable] = []
+    flagged: bool = False
+    model: Optional[str] = None
+    agent_id: Optional[str] = None
+    created: float
+    started: float
+    ended: float
+    metadata: dict = {}
+    episode_id: Optional[str] = None
+    hidden: bool = False
+
+
+class V1ValidationEvent(BaseModel):
+    """An action that has occurred"""
+
+    id: str
+    state: V1EnvState
+    action: V1Action
+    result: Any
+    end_state: Optional[V1EnvState] = None
+    event_order: Optional[int] = None
+    tool: Optional[V1ToolRef] = None
+    namespace: str
+    prompt: Optional[V1Prompt | V1ChatEvent] = None
+    reviews: List[V1Review] = []
+    reviewables: List[V1Reviewable] = []
+    flagged: bool = False
+    model: Optional[str] = None
+    agent_id: Optional[str] = None
+    created: float
+    started: float
+    ended: float
+    metadata: dict = {}
+    episode_id: Optional[str] = None
+    hidden: bool = False
 
 
 class V1Episode(BaseModel):

@@ -4,12 +4,15 @@ from typing import List
 
 import pytest
 from mllm import Prompt, RoleMessage, RoleThread
-from skillpacks.rating import Rating
+from orign.models import ChatRequest, ChatResponse, Choice, MessageItem, V1ChatEvent
+from orign.models import Prompt as OrignPrompt
 from toolfuse.models import V1ToolRef
 
 from skillpacks import ActionEvent, EnvState, Episode, V1Action
-from skillpacks.server.models import V1ActionEvent
 from skillpacks.action_opts import ActionOpt
+from skillpacks.rating import Rating
+from skillpacks.server.models import V1ActionEvent
+
 
 def create_episode_with_events(num_events: int = 3) -> Episode:
     thread = RoleThread()
@@ -78,12 +81,27 @@ def test_all():
         prompt=prompt1.id,
     )
 
-    prompt2 = Prompt(thread, response)
+    prompt2 = V1ChatEvent(
+        request=ChatRequest(
+            prompt=OrignPrompt(
+                messages=[
+                    MessageItem(
+                        role="user",
+                        content="What action should I take to open the browser?",
+                    )
+                ]
+            )
+        ),
+        response=ChatResponse(
+            request_id="request_id",
+            choices=[Choice(index=0, text="you should take this action...")],
+        ),
+    )
     event2 = episode.record(
         EnvState(images=["https://my.img"]),
         V1Action(name="open_browser", parameters={"app": "firefox"}),
         V1ToolRef(module="agentdesk", type="Desktop", version="0.1.3"),
-        prompt=prompt2.id,
+        prompt=prompt2,
     )
 
     event1_found = episode.get_event(event1.id)
@@ -234,9 +252,10 @@ def test_delete_all_actions():
     # Check that the actions are deleted from the database
     for action_id in action_ids:
         found_actions = ActionEvent.find(id=action_id)
-        assert (
-            len(found_actions) == 0
-        ), f"Action {action_id} was not deleted from the database"
+        assert len(found_actions) == 0, (
+            f"Action {action_id} was not deleted from the database"
+        )
+
 
 def test_delete_all_actions_with_reviews_and_annotations():
     # Create an episode with events
@@ -322,8 +341,12 @@ def test_action_event_with_opts_and_ratings():
         owner_id=owner_id,
     )
 
-    action_event.add_actionOpt(action=V1Action(name="opt1", parameters={"key1": "val1"}))
-    action_event.add_actionOpt(action=V1Action(name="opt2", parameters={"key2": "val2"}))
+    action_event.add_actionOpt(
+        action=V1Action(name="opt1", parameters={"key1": "val1"})
+    )
+    action_event.add_actionOpt(
+        action=V1Action(name="opt2", parameters={"key2": "val2"})
+    )
 
     # Step 3: Fetch the ActionEvent using the find method with owner_id and verify ActionOpts load correctly
     found_actions = ActionEvent.find(id=action_event.id)

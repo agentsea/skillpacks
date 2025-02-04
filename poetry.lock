@@ -2341,13 +2341,13 @@ datalib = ["numpy (>=1)", "pandas (>=1.2.3)", "pandas-stubs (>=1.1.0.11)"]
 
 [[package]]
 name = "orign"
-version = "0.1.14"
+version = "0.1.26"
 description = "A Python client for Orign"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "orign-0.1.14-py3-none-any.whl", hash = "sha256:994e5080da9787601051bf626c71f8b6b8148f22a4b54415217abf3514b319c0"},
-    {file = "orign-0.1.14.tar.gz", hash = "sha256:f4d08781da9e25a8fd40d77bfd23af9eceda0548f8967fb7e745fdb4e03d48ce"},
+    {file = "orign-0.1.26-py3-none-any.whl", hash = "sha256:3724b3279f60cada224ac22c729699bca28b9b0d06b84463f89101f507af2c9f"},
+    {file = "orign-0.1.26.tar.gz", hash = "sha256:324558f033d6e03f225db3d2142a495ae29fbc56556eef2352e6ddddf5851f6d"},
 ]
 
 [package.dependencies]
@@ -4611,4 +4611,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "ddf045bcc1a2536f4fe36b928a846d92f3668ae38a10613a2aac308dc6ca34be"
+content-hash = "6304f418e44eb6cbe3e8d450b05043c81cecf6e532e792eebc73d2c1f7437c1a"
