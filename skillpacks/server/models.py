@@ -192,31 +192,6 @@ class V1ThoughtEvent(BaseModel):
     hidden: bool = False
 
 
-class V1ValidationEvent(BaseModel):
-    """An action that has occurred"""
-
-    id: str
-    state: V1EnvState
-    action: V1Action
-    result: Any
-    end_state: Optional[V1EnvState] = None
-    event_order: Optional[int] = None
-    tool: Optional[V1ToolRef] = None
-    namespace: str
-    prompt: Optional[V1Prompt | V1ChatEvent] = None
-    reviews: List[V1Review] = []
-    reviewables: List[V1Reviewable] = []
-    flagged: bool = False
-    model: Optional[str] = None
-    agent_id: Optional[str] = None
-    created: float
-    started: float
-    ended: float
-    metadata: dict = {}
-    episode_id: Optional[str] = None
-    hidden: bool = False
-
-
 class V1Episode(BaseModel):
     """An agent episode"""
 
