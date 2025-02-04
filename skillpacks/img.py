@@ -118,7 +118,7 @@ def upload_image_to_gcs(image_data: bytes, mime_type: str) -> str:
     return blob.public_url
 
 
-def convert_images(images: Sequence[str | Image.Image]) -> List[str]:
+def convert_images(images: Sequence[str | Image.Image | None]) -> List[str]:
     sa = os.getenv(STORAGE_SA_JSON_ENV)
     new_imgs: List[str] = []
     if sa:
@@ -146,6 +146,8 @@ def convert_images(images: Sequence[str | Image.Image]) -> List[str]:
                 raise ValueError("unnknown image type")
     else:
         for img in images:
+            if img is None:  # Skip if the image is None
+                continue
             print("convert_images function, proceeding with non gcs key path", flush=True)
             if isinstance(img, Image.Image):
                 new_imgs.append(image_to_b64(img))
