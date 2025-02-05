@@ -559,6 +559,7 @@ class Episode(WithDB):
     def record_event(self, action: ActionEvent) -> None:
         """Records an action to the episode."""
         action.episode_id = self.id
+        print(f"saving and recording action: {action.id} event_order: {action.event_order} episode: {self.id}", flush=True)
         action.save()
         # update in-memory copy only
         self.actions.append(action)
