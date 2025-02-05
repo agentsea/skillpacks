@@ -1,3 +1,4 @@
+import json
 import pytest
 from toolfuse.models import V1ToolRef
 
@@ -410,10 +411,10 @@ def test_post_annotation_reviewable_and_add_reviews():
         assert reviews[1].reviewer == "Reviewer2"
         assert reviews[1].approved is False
         assert (
-            reviews[1].correction
+            V1AnnotationReviewable(**reviews[1].correction) # type: ignore
             == V1AnnotationReviewable(
                 key="Label", value="Corrected Value"
-            ).model_dump_json()
+            )
         )  # Correction added
 
     # Verify using the to_v1 method

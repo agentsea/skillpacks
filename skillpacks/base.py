@@ -630,7 +630,7 @@ class Episode(WithDB):
             record = self.to_record()
             db.merge(record)
             db.commit()
-        print(f"episode {self.id} saved with actions: {[action.to_v1() for action in self.actions]}")
+        print(f"episode {self.id} saved with actions: {[action.id for action in self.actions]}")
 
     def to_record(self) -> EpisodeRecord:
         """Converts the episode instance to a database record."""
