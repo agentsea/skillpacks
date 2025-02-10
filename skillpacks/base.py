@@ -596,6 +596,7 @@ class Episode(WithDB):
         model: Optional[str] = None,
         agent_id: Optional[str] = None,
         reviews: Optional[List[Review]] = None,
+        reviewables: Optional[List[Reviewable]] = None,
     ) -> ActionEvent:
         """Records an action to the episode."""
         if isinstance(prompt, str):
@@ -616,6 +617,7 @@ class Episode(WithDB):
             agent_id=agent_id,
             reviews=reviews,
             episode_id=self.id,
+            reviewables=reviewables,
         )
         self.record_event(event)
 
