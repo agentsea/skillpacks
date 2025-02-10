@@ -127,7 +127,7 @@ def convert_images(images: Sequence[str | Image.Image | None]) -> List[str]:
                 new_imgs.append(image_to_b64(img))
             elif isinstance(img, str):
                 if img.startswith("data:"):
-                    print("convert_images function, uploading img to gcs", flush=True)
+                    # print("convert_images function, uploading img to gcs", flush=True)
                     mime_type, base64_data = parse_image_data(img)
                     image_data = base64.b64decode(base64_data)
                     public_url = upload_image_to_gcs(image_data, mime_type)
@@ -135,7 +135,7 @@ def convert_images(images: Sequence[str | Image.Image | None]) -> List[str]:
                 elif img.startswith("https://"):
                     new_imgs.append(img)
                 else:
-                    print("convert_images function, uploading img to gcs in else", flush=True)
+                    # print("convert_images function, uploading img to gcs in else", flush=True)
                     loaded_img = Image.open(img)
                     b64_img = image_to_b64(loaded_img)
                     mime_type, base64_data = parse_image_data(b64_img)
@@ -148,7 +148,7 @@ def convert_images(images: Sequence[str | Image.Image | None]) -> List[str]:
         for img in images:
             if img is None:  # Skip if the image is None
                 continue
-            print("convert_images function, proceeding with non gcs key path", flush=True)
+            # print("convert_images function, proceeding with non gcs key path", flush=True)
             if isinstance(img, Image.Image):
                 new_imgs.append(image_to_b64(img))
             elif img.startswith("data:") or img.startswith("https://"):
