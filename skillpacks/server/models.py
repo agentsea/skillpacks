@@ -93,6 +93,7 @@ class V1EnvState(BaseModel):
     coordinates: Optional[Tuple[int, int]] = None
     video: Optional[str] = None
     text: Optional[str] = None
+    timestamp: Optional[float] = None
 
 
 class V1Reviewable(BaseModel):

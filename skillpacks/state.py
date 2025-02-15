@@ -15,11 +15,13 @@ class EnvState:
         coordinates: Optional[Tuple[int, int]] = None,
         video: Optional[str] = None,
         text: Optional[str] = None,
+        timestamp: Optional[float] = None
     ) -> None:
         self.images = convert_images(images) if images else None  # type: ignore
         self.coordinates = coordinates
         self.video = video
         self.text = text
+        self.timestamp = timestamp
 
     def to_v1(self) -> V1EnvState:
         return V1EnvState(
@@ -27,6 +29,7 @@ class EnvState:
             coordinates=self.coordinates,
             video=self.video,
             text=self.text,
+            timestamp=self.timestamp
         )
 
     @classmethod
@@ -36,5 +39,6 @@ class EnvState:
         out.coordinates = data.coordinates
         out.video = data.video
         out.text = data.text
+        out.timestamp = data.timestamp
 
         return out
