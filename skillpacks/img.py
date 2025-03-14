@@ -116,7 +116,7 @@ def upload_image_to_gcs(image_data: bytes, mime_type: str) -> str:
     blob.content_type = mime_type
 
     # Delete the temporary file
-    if sa_json.startswith("{"):
+    if sa_json and sa_json.startswith("{"):
         os.remove(temp_file_name)
 
     return blob.public_url
