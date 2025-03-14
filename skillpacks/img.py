@@ -8,11 +8,11 @@ import tempfile
 from io import BytesIO
 from typing import List, Sequence
 
+import google.api_core.exceptions as google_exceptions
+from PIL import Image
 from google.cloud import storage
-from PIL import Image, ImageDraw, ImageFont
-from sqlalchemy import asc
 
-from .env import HUB_API_KEY_ENV, STORAGE_BUCKET_ENV, STORAGE_SA_JSON_ENV
+from .env import STORAGE_BUCKET_ENV, STORAGE_SA_JSON_ENV
 
 
 def image_to_b64(img: Image.Image, image_format="PNG") -> str:
@@ -77,19 +77,23 @@ def upload_image_to_gcs(image_data: bytes, mime_type: str) -> str:
     """Uploads an image to Google Cloud Storage and returns the public URL."""
     sa_json = os.getenv(STORAGE_SA_JSON_ENV)
     if not sa_json:
-        raise ValueError(f"Environment variable {STORAGE_SA_JSON_ENV} not set")
-
-    # Check if the service account JSON is a path or a JSON string
-    if sa_json.startswith("{"):
-        # Assume it's a JSON string, write to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
-            temp_file.write(sa_json.encode())
-            temp_file_name = temp_file.name
+        try:
+            storage_client = storage.Client()
+        except google_exceptions.ClientError:
+            raise ValueError(
+                f"No GCS credentials in the environment and environment variable '{STORAGE_SA_JSON_ENV}' not set.")
     else:
-        # Assume it's a path to a JSON file
-        temp_file_name = sa_json
+        # Check if the service account JSON is a path or a JSON string
+        if sa_json.startswith("{"):
+            # Assume it's a JSON string, write to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
+                temp_file.write(sa_json.encode())
+                temp_file_name = temp_file.name
+        else:
+            # Assume it's a path to a JSON file
+            temp_file_name = sa_json
 
-    storage_client = storage.Client.from_service_account_json(temp_file_name)
+        storage_client = storage.Client.from_service_account_json(temp_file_name)
 
     bucket_name = os.getenv(STORAGE_BUCKET_ENV)
     if not bucket_name:
@@ -110,18 +114,28 @@ def upload_image_to_gcs(image_data: bytes, mime_type: str) -> str:
     # Upload the temporary file to Google Cloud Storage
     blob.upload_from_filename(temp_file_name)
     blob.content_type = mime_type
-    blob.make_public()
 
     # Delete the temporary file
-    os.remove(temp_file_name)
+    if sa_json.startswith("{"):
+        os.remove(temp_file_name)
 
     return blob.public_url
 
 
 def convert_images(images: Sequence[str | Image.Image | None]) -> List[str]:
-    sa = os.getenv(STORAGE_SA_JSON_ENV)
+    if os.getenv(STORAGE_SA_JSON_ENV):
+        gcs_access = True
+    else:
+        try:
+            _ = storage.Client()
+        except Exception:
+            # something went wrong initializing a storage client,
+            # likely because there are no credentials in the environment
+            gcs_access = False
+        else:
+            gcs_access = True
     new_imgs: List[str] = []
-    if sa:
+    if gcs_access:
         for img in images:
             if isinstance(img, Image.Image):
                 new_imgs.append(image_to_b64(img))
