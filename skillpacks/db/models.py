@@ -64,6 +64,8 @@ class ReviewRecord(Base):
         Index("idx_reviews_approved", "approved"),
         Index("idx_reviews_reviewer", "reviewer"),
         Index("idx_reviews_created", "created"),
+        Index("idx_reviews_res_created", "resource_type", "created"),
+        Index("idx_reviews_res_updated", "resource_type", "updated")
     )
     id = Column(String, primary_key=True)
     reviewer = Column(String, nullable=False)

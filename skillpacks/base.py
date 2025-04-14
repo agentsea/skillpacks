@@ -121,7 +121,7 @@ class ActionEvent(WithDB):
                 review.approved = approved
                 review.reason = reason
                 review.updated = time.time()
-                review.correction = review.correction
+                review.correction = correctionRecord if correctionRecord else review.correction
 
         if not reviewerReview:
             review = Review(
