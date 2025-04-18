@@ -2370,24 +2370,6 @@ realtime = ["websockets (>=13,<16)"]
 voice-helpers = ["numpy (>=2.0.2)", "sounddevice (>=0.5.1)"]
 
 [[package]]
-name = "orign"
-version = "0.1.26"
-description = "A Python client for Orign"
-optional = false
-python-versions = "<4.0,>=3.10"
-files = [
-    {file = "orign-0.1.26-py3-none-any.whl", hash = "sha256:3724b3279f60cada224ac22c729699bca28b9b0d06b84463f89101f507af2c9f"},
-    {file = "orign-0.1.26.tar.gz", hash = "sha256:324558f033d6e03f225db3d2142a495ae29fbc56556eef2352e6ddddf5851f6d"},
-]
-
-[package.dependencies]
-pillow = ">=10.4,<11.0"
-pydantic = ">=2.9.2,<3.0.0"
-pyyaml = ">=6.0.2,<7.0.0"
-websocket-client = ">=1.8.0,<2.0.0"
-websockets = ">=13.1,<14.0"
-
-[[package]]
 name = "orjson"
 version = "3.10.3"
 description = "Fast, correct Python JSON library supporting dataclasses, datetimes, and numpy"
@@ -4428,22 +4410,6 @@ files = [
 anyio = ">=3.0.0"
 
 [[package]]
-name = "websocket-client"
-version = "1.8.0"
-description = "WebSocket client for Python with low level API options"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "websocket_client-1.8.0-py3-none-any.whl", hash = "sha256:17b44cc997f5c498e809b22cdf2d9c7a9e71c02c8cc2b6c56e7c2d1239bfa526"},
-    {file = "websocket_client-1.8.0.tar.gz", hash = "sha256:3239df9f44da632f96012472805d40a23281a991027ce11d2f45a6f24ac4c3da"},
-]
-
-[package.extras]
-docs = ["Sphinx (>=6.0)", "myst-parser (>=2.0.0)", "sphinx-rtd-theme (>=1.1.0)"]
-optional = ["python-socks", "wsaccel"]
-test = ["websockets"]
-
-[[package]]
 name = "websockets"
 version = "13.1"
 description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
@@ -4678,4 +4644,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "a225ecd02e509dd1dfc61e42349c80a15ebacf16265d1691a8553a92abf6a1f1"
+content-hash = "39405bfc265acfb0cc23126af8f9d31fcff3a7fccb5d7a9acc60d8586297af38"

@@ -4,13 +4,13 @@ from typing import Any, Dict, List, Optional
 
 import shortuuid
 from mllm import Prompt
-from orign import V1ChatEvent
 from sqlalchemy import asc
 from sqlalchemy.orm.exc import StaleDataError
 
 from skillpacks.action_opts import ActionOpt
 from skillpacks.rating import Rating
 
+from .chat import V1ChatEvent
 from .db.conn import WithDB
 from .db.models import (
     ActionRecord,
@@ -121,7 +121,9 @@ class ActionEvent(WithDB):
                 review.approved = approved
                 review.reason = reason
                 review.updated = time.time()
-                review.correction = correctionRecord if correctionRecord else review.correction
+                review.correction = (
+                    correctionRecord if correctionRecord else review.correction
+                )
 
         if not reviewerReview:
             review = Review(
@@ -559,7 +561,10 @@ class Episode(WithDB):
     def record_event(self, action: ActionEvent) -> None:
         """Records an action to the episode."""
         action.episode_id = self.id
-        print(f"saving and recording action: {action.id} event_order: {action.event_order} episode: {self.id}", flush=True)
+        print(
+            f"saving and recording action: {action.id} event_order: {action.event_order} episode: {self.id}",
+            flush=True,
+        )
         action.save()
         # update in-memory copy only
         self.actions.append(action)
@@ -632,7 +637,9 @@ class Episode(WithDB):
             record = self.to_record()
             db.merge(record)
             db.commit()
-        print(f"episode {self.id} saved with actions: {[action.id for action in self.actions]}")
+        print(
+            f"episode {self.id} saved with actions: {[action.id for action in self.actions]}"
+        )
 
     def to_record(self) -> EpisodeRecord:
         """Converts the episode instance to a database record."""

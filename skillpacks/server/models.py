@@ -2,9 +2,10 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 from mllm import V1Prompt
-from orign import V1ChatEvent
 from pydantic import BaseModel, Field
 from toolfuse.models import V1ToolRef
+
+from ..chat import V1ChatEvent
 
 
 class ReviewerType(Enum):

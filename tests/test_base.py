@@ -4,12 +4,12 @@ from typing import List
 
 import pytest
 from mllm import Prompt, RoleMessage, RoleThread
-from orign.models import ChatRequest, ChatResponse, Choice, MessageItem, V1ChatEvent
-from orign.models import Prompt as OrignPrompt
 from toolfuse.models import V1ToolRef
 
 from skillpacks import ActionEvent, EnvState, Episode, V1Action
 from skillpacks.action_opts import ActionOpt
+from skillpacks.chat import ChatRequest, ChatResponse, Choice, MessageItem, V1ChatEvent
+from skillpacks.chat import Prompt as OrignPrompt
 from skillpacks.rating import Rating
 from skillpacks.server.models import V1ActionEvent
 
@@ -60,6 +60,7 @@ def create_episode_with_actions(num_actions: int = 3) -> Episode:
             prompt=prompt.id,
         )
     return episode
+
 
 def test_all():
     thread = RoleThread()
@@ -252,16 +253,18 @@ def test_delete_all_actions():
     # Check that the actions are deleted from the database
     for action_id in action_ids:
         found_actions = ActionEvent.find(id=action_id)
-        assert len(found_actions) == 0, (
-            f"Action {action_id} was not deleted from the database"
-        )
+        assert (
+            len(found_actions) == 0
+        ), f"Action {action_id} was not deleted from the database"
 
 
 def test_delete_all_actions_with_reviews_and_annotations():
     # Create an episode with events
     episode = create_episode_with_events(num_events=3)
     initial_action_count = len(episode.actions)
-    assert initial_action_count == 4  # 3 events + 1 extra event in create_episode_with_events
+    assert (
+        initial_action_count == 4
+    )  # 3 events + 1 extra event in create_episode_with_events
 
     # Add reviews from multiple reviewers to each action
     for action in episode.actions:
@@ -269,13 +272,13 @@ def test_delete_all_actions_with_reviews_and_annotations():
             reviewer="user1@example.com",
             approved=True,
             reviewer_type="user",
-            reason="Looks good"
+            reason="Looks good",
         )
         action.post_review(
             reviewer="user2@example.com",
             approved=False,
             reviewer_type="user",
-            reason="Needs improvement"
+            reason="Needs improvement",
         )
 
         # Add annotations to each action
@@ -283,13 +286,13 @@ def test_delete_all_actions_with_reviews_and_annotations():
             type="AnnotationReviewable",
             key="annotation_key",
             value="annotation_value",
-            annotator="user1@example.com"
+            annotator="user1@example.com",
         )
         action.post_reviewable(
             type="AnnotationReviewable",
             key="annotation_key_2",
             value="annotation_value_2",
-            annotator="user2@example.com"
+            annotator="user2@example.com",
         )
 
     # Verify that reviews and annotations have been added to the actions
@@ -303,11 +306,17 @@ def test_delete_all_actions_with_reviews_and_annotations():
     # Check that actions, reviews, and reviewables are in the database before deletion
     for action_id in action_ids:
         found_actions = ActionEvent.find(id=action_id)
-        assert len(found_actions) == 1, f"Action {action_id} was not found in the database"
+        assert (
+            len(found_actions) == 1
+        ), f"Action {action_id} was not found in the database"
 
         found_action = found_actions[0]
-        assert len(found_action.reviews) == 2, f"Reviews for action {action_id} are missing or incorrect"
-        assert len(found_action.reviewables) == 2, f"Annotations for action {action_id} are missing or incorrect"
+        assert (
+            len(found_action.reviews) == 2
+        ), f"Reviews for action {action_id} are missing or incorrect"
+        assert (
+            len(found_action.reviewables) == 2
+        ), f"Annotations for action {action_id} are missing or incorrect"
 
     # Delete all actions from the episode
     episode.delete_all_actions()
@@ -318,12 +327,19 @@ def test_delete_all_actions_with_reviews_and_annotations():
     # Check that the actions are deleted from the database
     for action_id in action_ids:
         found_actions = ActionEvent.find(id=action_id)
-        assert len(found_actions) == 0, f"Action {action_id} was not deleted from the database"
+        assert (
+            len(found_actions) == 0
+        ), f"Action {action_id} was not deleted from the database"
 
         # Also check that the reviews and annotations are deleted
         for action in found_actions:
-            assert len(action.reviews) == 0, f"Reviews for action {action.id} were not deleted"
-            assert len(action.reviewables) == 0, f"Annotations for action {action.id} were not deleted"
+            assert (
+                len(action.reviews) == 0
+            ), f"Reviews for action {action.id} were not deleted"
+            assert (
+                len(action.reviewables) == 0
+            ), f"Annotations for action {action.id} were not deleted"
+
 
 def test_action_event_with_opts_and_ratings():
     # Create ActionEvent with ActionOpts
@@ -417,7 +433,6 @@ def test_action_event_with_opts_and_ratings():
     print("Final check: Action, ActionOpts, and Ratings all loaded correctly.")
 
 
-
 def test_review_replacement_functions():
     """
     Tests the review methods to ensure that reviews from the same reviewer
@@ -450,24 +465,39 @@ def test_review_replacement_functions():
                     reviewer=reviewer["reviewer"],
                     reviewer_type=reviewer["reviewer_type"],
                     reason=f"{reviewer['reviewer']} fails action {action.id}",
-                    correction=V1Action(name="click", parameters={"x":590,"y":120,"button":"left"})
+                    correction=V1Action(
+                        name="click", parameters={"x": 590, "y": 120, "button": "left"}
+                    ),
                 )
 
     # Step 3: Verify initial reviews
     for action in episode.actions:
         for reviewer in reviewers:
             matching_reviews = [
-                review for review in action.reviews
+                review
+                for review in action.reviews
                 if review.reviewer == reviewer["reviewer"]
                 and review.reviewer_type == reviewer["reviewer_type"]
             ]
-            assert len(matching_reviews) == 1, f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
+            assert (
+                len(matching_reviews) == 1
+            ), f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
             if reviewer["reviewer"] == "user1@example.com":
-                assert matching_reviews[0].approved == True, f"Review by {reviewer['reviewer']} should be approved"
-                assert matching_reviews[0].reason == f"{reviewer['reviewer']} approves action {action.id}"
+                assert (
+                    matching_reviews[0].approved == True
+                ), f"Review by {reviewer['reviewer']} should be approved"
+                assert (
+                    matching_reviews[0].reason
+                    == f"{reviewer['reviewer']} approves action {action.id}"
+                )
             else:
-                assert matching_reviews[0].approved == False, f"Review by {reviewer['reviewer']} should be failed"
-                assert matching_reviews[0].reason == f"{reviewer['reviewer']} fails action {action.id}"
+                assert (
+                    matching_reviews[0].approved == False
+                ), f"Review by {reviewer['reviewer']} should be failed"
+                assert (
+                    matching_reviews[0].reason
+                    == f"{reviewer['reviewer']} fails action {action.id}"
+                )
 
     # Step 4: Perform approve_all for both reviewers
     for reviewer in reviewers:
@@ -481,13 +511,18 @@ def test_review_replacement_functions():
     for action in episode.actions:
         for reviewer in reviewers:
             matching_reviews = [
-                review for review in action.reviews
+                review
+                for review in action.reviews
                 if review.reviewer == reviewer["reviewer"]
                 and review.reviewer_type == reviewer["reviewer_type"]
             ]
-            assert len(matching_reviews) == 1, f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
+            assert (
+                len(matching_reviews) == 1
+            ), f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
             # After fail_all, the latest status should be failed
-            assert matching_reviews[0].approved, f"Review by {reviewer['reviewer']} should be failed after fail_all"
+            assert (
+                matching_reviews[0].approved
+            ), f"Review by {reviewer['reviewer']} should be failed after fail_all"
 
     # Step 5: Perform fail_all for both reviewers
     for reviewer in reviewers:
@@ -501,13 +536,18 @@ def test_review_replacement_functions():
     for action in episode.actions:
         for reviewer in reviewers:
             matching_reviews = [
-                review for review in action.reviews
+                review
+                for review in action.reviews
                 if review.reviewer == reviewer["reviewer"]
                 and review.reviewer_type == reviewer["reviewer_type"]
             ]
-            assert len(matching_reviews) == 1, f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
+            assert (
+                len(matching_reviews) == 1
+            ), f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
             # After fail_all, the latest status should be failed
-            assert not matching_reviews[0].approved, f"Review by {reviewer['reviewer']} should be failed after fail_all"
+            assert (
+                not matching_reviews[0].approved
+            ), f"Review by {reviewer['reviewer']} should be failed after fail_all"
 
     # Step 7: Perform approve_prior on the third action for both reviewers
     third_action = episode.actions[2]
@@ -534,11 +574,14 @@ def test_review_replacement_functions():
     for index, action in enumerate(episode.actions):
         for reviewer in reviewers:
             matching_reviews = [
-                review for review in action.reviews
+                review
+                for review in action.reviews
                 if review.reviewer == reviewer["reviewer"]
                 and review.reviewer_type == reviewer["reviewer_type"]
             ]
-            assert len(matching_reviews) == 1, f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
+            assert (
+                len(matching_reviews) == 1
+            ), f"Action {action.id} should have exactly one review from {reviewer['reviewer']}"
 
             # Determine expected approval status based on the latest operation
             if index == 0:
@@ -548,15 +591,17 @@ def test_review_replacement_functions():
             else:
                 expected_approved = True
 
-            assert matching_reviews[0].approved == expected_approved, (
-                f"Review by {reviewer['reviewer']} for action {action.id} index: {index}  should be {'approved' if expected_approved else 'failed'}"
-            )
+            assert (
+                matching_reviews[0].approved == expected_approved
+            ), f"Review by {reviewer['reviewer']} for action {action.id} index: {index}  should be {'approved' if expected_approved else 'failed'}"
 
     # Step 10: Ensure no duplicate reviews exist
     for action in episode.actions:
         unique_reviewers = set(
             (review.reviewer, review.reviewer_type) for review in action.reviews
         )
-        assert len(unique_reviewers) == len(action.reviews), f"Action {action.id} has duplicate reviews"
+        assert len(unique_reviewers) == len(
+            action.reviews
+        ), f"Action {action.id} has duplicate reviews"
 
     print("All review replacement functions tested successfully.")
