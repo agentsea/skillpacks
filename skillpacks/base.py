@@ -658,33 +658,56 @@ class Episode(WithDB):
         return episode_record
 
     @classmethod
-    def from_record(cls, record: EpisodeRecord) -> "Episode":
+    def from_record(
+        cls,
+        record: EpisodeRecord,
+        action_recs: List[ActionRecord],
+    ) -> "Episode":
         """Creates an episode instance from a database record."""
         episode = cls.__new__(cls)
         episode.id = record.id
-        episode.actions = [
-            ActionEvent.from_record(action)
-            for action in sorted(record.actions, key=lambda x: x.created)
-        ]
         episode.tags = json.loads(str(record.tags))
         episode.labels = json.loads(str(record.labels))
         episode.created = record.created
         episode.updated = record.updated
         episode.owner_id = record.owner_id
-        episode.device = record.device  # Retrieve device
-        episode.device_type = record.device_type  # Retrieve device_type
+        episode.device = record.device
+        episode.device_type = record.device_type
+
+        # hydrate each ActionEvent from the ActionRecord
+        episode.actions = [ActionEvent.from_record(ar) for ar in action_recs]
+
         return episode
 
     @classmethod
     def find(cls, **kwargs) -> List["Episode"]:
+        """
+        Load episodes + their actions in one go.
+        Returns a list of Episode instances.
+        """
         for db in cls.get_db():
-            records = (
-                db.query(EpisodeRecord)
-                .filter_by(**kwargs)
-                .order_by(asc(EpisodeRecord.created))
-                .all()
+            # outerjoin so episodes with zero actions still show up
+            rows = (
+                db.query(EpisodeRecord, ActionRecord)
+                  .outerjoin(ActionRecord, ActionRecord.episode_id == EpisodeRecord.id)
+                  .filter_by(**kwargs)
+                  .order_by(asc(EpisodeRecord.created), asc(ActionRecord.created))
+                  .all()
             )
-            return [cls.from_record(record) for record in records]
+
+            # group action-records under each episode
+            episodes: dict[str, dict] = {}
+            for ep_rec, act_rec in rows:
+                if ep_rec.id not in episodes:
+                    episodes[ep_rec.id] = {"ep": ep_rec, "actions": []}
+                if act_rec is not None:
+                    episodes[ep_rec.id]["actions"].append(act_rec)
+
+            # build Episode objects
+            return [
+                cls.from_record(info["ep"], info["actions"])
+                for info in episodes.values()
+            ]
 
         raise ValueError("no session")
 
