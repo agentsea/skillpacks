@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 import shortuuid
 from mllm import Prompt
 from sqlalchemy import asc
+from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import StaleDataError
 
 from skillpacks.action_opts import ActionOpt
@@ -686,12 +687,15 @@ class Episode(WithDB):
         Returns a list of Episode instances.
         """
         for db in cls.get_db():
-            # outerjoin so episodes with zero actions still show up
+            # 1) pull only the episodes you want
+            episode_subq = db.query(EpisodeRecord).filter_by(**kwargs).subquery()
+            episode = aliased(EpisodeRecord, episode_subq)
+
+            # 2) join their actions
             rows = (
-                db.query(EpisodeRecord, ActionRecord)
-                  .outerjoin(ActionRecord, ActionRecord.episode_id == EpisodeRecord.id)
-                  .filter_by(**kwargs)
-                  .order_by(asc(EpisodeRecord.created), asc(ActionRecord.created))
+                db.query(episode, ActionRecord)
+                  .outerjoin(ActionRecord, ActionRecord.episode_id == episode.id)
+                  .order_by(asc(episode.created), asc(ActionRecord.created))
                   .all()
             )
 
